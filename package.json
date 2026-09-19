@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "start": "wrangler dev --port 3210",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "vendor:three": "esbuild src/three-entry.js --bundle --minify --format=esm --legal-comments=eof --outfile=public/vendor/three.js"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,8 @@
     "@typesafe-ai/sdk": "^0.6.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
+    "three": "^0.186.0",
     "wrangler": "^4.135.0"
   }
 }
