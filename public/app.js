@@ -25,12 +25,24 @@ async function ask(question) {
   return body.answer;
 }
 
+let busy = false;
+
+// Sending needs a typed question and no request already in flight.
+function syncSend() {
+  send.disabled = busy || !input.value.trim();
+}
+
+input.addEventListener("input", syncSend);
+// Also covers a value the browser restored (autofill, back navigation).
+syncSend();
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const question = input.value.trim();
-  if (!question || send.disabled) return;
+  if (!question || busy) return;
 
-  send.disabled = true;
+  busy = true;
+  syncSend();
   error.textContent = "";
   answer.textContent = "…";
   ball.classList.add("thinking", "shaking");
@@ -44,7 +56,8 @@ form.addEventListener("submit", async (event) => {
     error.textContent = err.message;
   } finally {
     ball.classList.remove("thinking", "shaking");
-    send.disabled = false;
+    busy = false;
+    syncSend();
     input.focus();
   }
 });
