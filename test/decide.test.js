@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { decide } from "../lib/decide.js";
-import { AFFIRMATIVE, NEGATIVE, NON_COMMITTAL } from "../lib/answers.js";
+import { AFFIRMATIVE, NEGATIVE, NON_COMMITTAL, TONE } from "../lib/answers.js";
 
 // Signals with everything quiet; override per case.
 const quiet = {
@@ -12,6 +12,8 @@ const quiet = {
   unwelcome: 0,
   unpredictable: 0,
   unfocused: 0,
+  snarky: 0,
+  selfDeprecating: 0,
 };
 const run = (overrides) => decide({ ...quiet, ...overrides });
 
@@ -69,4 +71,37 @@ test("a confident lean commits even when a hedging signal is high", () => {
 
 test("a non-question is never answered, whatever the lean", () => {
   assert.equal(run({ favorable: 0.95, certain: 0.95, unfocused: 0.9 }).answer, "Concentrate and ask again");
+});
+
+test("tone answers are members of the canonical lists", () => {
+  assert.ok(NEGATIVE.includes(TONE.snarky));
+  assert.ok(AFFIRMATIVE.includes(TONE.selfDeprecating));
+});
+
+test("a snarky question gets \"Don't count on it\"", () => {
+  assert.deepEqual(run({ snarky: 0.51, favorable: 1, certain: 1 }), {
+    category: "negative",
+    answer: "Don't count on it",
+  });
+});
+
+test("a self-deprecating question gets \"As I see it, yes\"", () => {
+  assert.deepEqual(run({ selfDeprecating: 0.51, favorable: 0, certain: 1 }), {
+    category: "affirmative",
+    answer: "As I see it, yes",
+  });
+});
+
+test("tone routes only above 0.50", () => {
+  assert.notEqual(run({ snarky: 0.5, favorable: 1, certain: 1 }).answer, TONE.snarky);
+  assert.notEqual(run({ selfDeprecating: 0.5, favorable: 0, certain: 1 }).answer, TONE.selfDeprecating);
+});
+
+test("tone overrides hedging and non-question handling", () => {
+  assert.equal(run({ snarky: 0.9, unfocused: 0.9, later: 0.95 }).answer, TONE.snarky);
+  assert.equal(run({ selfDeprecating: 0.9, hazy: 0.95 }).answer, TONE.selfDeprecating);
+});
+
+test("snark wins when both tones fire", () => {
+  assert.equal(run({ snarky: 0.8, selfDeprecating: 0.8 }).answer, TONE.snarky);
 });
