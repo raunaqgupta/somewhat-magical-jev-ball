@@ -1,15 +1,29 @@
 # Magic Jev Ball
 
 A Magic 8 Ball whose answers are decided by [Jev](https://docs.typesafe.ai), TypeSafe's System One model.
-Plain HTML/CSS/JS front end, following the Paper design; a small dependency-free Node server keeps the API key off the browser.
+Plain HTML/CSS/JS front end, following the Paper design; a small Cloudflare Worker keeps the API key off the browser.
+
+Live at https://magicjevball.raunaqgupta.com
 
 ## Run
 
 ```sh
 npm install
-cp .env.example .env   # then add your TYPESAFE_API_KEY
-npm start              # http://localhost:3210
+cp .dev.vars.example .dev.vars   # then add your TYPESAFE_API_KEY
+npm start                        # wrangler dev, http://localhost:3210
 npm test
+```
+
+## Deploy
+
+`public/` is served as static assets and `src/worker.js` handles `/api/ask`
+(`wrangler.jsonc`). The custom domain and a rate limit of 20 requests per minute per IP
+are configured there.
+
+```sh
+npx wrangler login
+npx wrangler secret put TYPESAFE_API_KEY   # once
+npm run deploy
 ```
 
 ## How a decision is made

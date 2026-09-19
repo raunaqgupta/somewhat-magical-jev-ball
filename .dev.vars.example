@@ -1,0 +1,2 @@
+# Local secrets for `npm start` (wrangler dev). Copy to .dev.vars and fill in.
+TYPESAFE_API_KEY=

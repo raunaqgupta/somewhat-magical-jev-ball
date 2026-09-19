@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "magic-jev-ball",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    // Only /api/* runs the Worker; everything else is served as a static file.
+    "run_worker_first": ["/api/*"]
+  },
+  "routes": [{ "pattern": "magicjevball.raunaqgupta.com", "custom_domain": true }],
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "4021",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ]
+}
