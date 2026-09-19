@@ -1,5 +1,5 @@
-// Renders the ball as a lit glossy sphere with three.js and moves the answer
-// window (a DOM element, so the text stays real text) around it in 3D.
+// Renders the ball as a lit glossy sphere with three.js. The answer window is
+// a DOM element on top of the canvas, so the text stays real text.
 import {
   AmbientLight,
   DirectionalLight,
@@ -10,9 +10,8 @@ import {
   SphereGeometry,
   WebGLRenderer,
 } from "./vendor/three.js";
-import { BALL_SIZE, tumblePose, windowPlacement, windowTransform } from "./ball-math.js";
 
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+const BALL_SIZE = 273;
 
 /** The sphere, its lights and the camera. Needs no WebGL, so it is testable in Node. */
 export function buildScene() {
@@ -46,10 +45,10 @@ export function buildScene() {
 }
 
 /**
- * Draw the sphere into `ball` and return `{ tumble(ms) }`, or `null` when WebGL
- * is unavailable, in which case the CSS ball stays as the fallback.
+ * Draw the sphere into `ball`. Does nothing when WebGL is unavailable, in which
+ * case the flat CSS ball stays as the fallback.
  */
-export function createBall(ball, windowEl) {
+export function createBall(ball) {
   const canvas = document.createElement("canvas");
   canvas.className = "ball-canvas";
   canvas.setAttribute("aria-hidden", "true");
@@ -58,49 +57,20 @@ export function createBall(ball, windowEl) {
   try {
     renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
   } catch {
-    return null;
+    return;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(BALL_SIZE, BALL_SIZE, false);
 
   const { scene, camera } = buildScene();
 
-  const draw = () => renderer.render(scene, camera);
-  const place = (rotY, rotX) => {
-    const p = windowPlacement(rotY, rotX);
-    windowEl.style.transform = windowTransform(p);
-    windowEl.style.opacity = String(p.opacity);
-  };
-
-  const disable = () => {
-    ball.classList.remove("is-3d");
-    windowEl.style.transform = "";
-    windowEl.style.opacity = "";
-    canvas.remove();
-  };
   canvas.addEventListener("webglcontextlost", (event) => {
     event.preventDefault();
-    disable();
+    ball.classList.remove("is-3d");
+    canvas.remove();
   });
 
   ball.prepend(canvas);
   ball.classList.add("is-3d");
-  draw();
-
-  let frame = 0;
-  return {
-    tumble(ms) {
-      cancelAnimationFrame(frame);
-      if (window.matchMedia(REDUCED_MOTION).matches) return;
-
-      const start = performance.now();
-      const step = (now) => {
-        const t = Math.min(1, (now - start) / ms);
-        const { rotY, rotX } = tumblePose(t);
-        place(rotY, rotX);
-        if (t < 1) frame = requestAnimationFrame(step);
-      };
-      frame = requestAnimationFrame(step);
-    },
-  };
+  renderer.render(scene, camera);
 }
