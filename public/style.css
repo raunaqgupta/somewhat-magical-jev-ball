@@ -78,6 +78,23 @@ body {
   animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+/* With the 3D ball, the sphere is drawn in the canvas and the window moves
+   around it in JS, so the flat circle and its CSS shake are not needed. */
+.ball-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ball.is-3d {
+  background: transparent;
+}
+
+.ball.is-3d.shaking {
+  animation: none;
+}
+
 @keyframes shake {
   10%, 90% { transform: translate(-2px, 1px) rotate(-1deg); }
   20%, 80% { transform: translate(4px, -2px) rotate(2deg); }
