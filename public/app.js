@@ -5,6 +5,8 @@ const send = document.getElementById("send");
 const answer = document.getElementById("answer");
 const error = document.getElementById("error");
 
+// The text the page ships with, restored if a request fails.
+const DEFAULT_TEXT = answer.textContent;
 const SHAKE_MS = 600;
 const CLOUDED = "The ball is clouded. Try again.";
 
@@ -38,7 +40,7 @@ form.addEventListener("submit", async (event) => {
     const [text] = await Promise.all([ask(question), wait(SHAKE_MS)]);
     answer.textContent = text;
   } catch (err) {
-    answer.textContent = "8";
+    answer.textContent = DEFAULT_TEXT;
     error.textContent = err.message;
   } finally {
     ball.classList.remove("thinking", "shaking");
