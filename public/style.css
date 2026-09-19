@@ -1,0 +1,180 @@
+:root {
+  --bg: #ffffff;
+  --ink: #000000;
+  --border: #ededed;
+  --muted: #666666;
+  --window-text: #aaaaaa;
+  --window-glow: #4747474a;
+  --font: system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.stage {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 55px;
+  padding: 32px 16px;
+}
+
+/* The ball */
+.ball {
+  position: relative;
+  flex-shrink: 0;
+  width: 273px;
+  height: 273px;
+  border-radius: 50%;
+  background: var(--ink);
+  overflow: clip;
+}
+
+.window {
+  position: absolute;
+  top: 18px;
+  left: 62px;
+  width: 149px;
+  height: 149px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: var(--window-glow) 0 2px 112px 58px inset;
+  display: grid;
+  place-items: center;
+  overflow: clip;
+}
+
+.answer {
+  margin: 0;
+  max-width: 100px;
+  color: var(--window-text);
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  text-wrap: balance;
+  transition: opacity 0.4s ease;
+}
+
+.ball.thinking .answer {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.ball.shaking {
+  animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate(-2px, 1px) rotate(-1deg); }
+  20%, 80% { transform: translate(4px, -2px) rotate(2deg); }
+  30%, 50%, 70% { transform: translate(-7px, 3px) rotate(-3deg); }
+  40%, 60% { transform: translate(7px, -3px) rotate(3deg); }
+}
+
+@keyframes pulse {
+  50% { opacity: 0.25; }
+}
+
+/* The question input */
+.ask {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: clip;
+}
+
+.ask:focus-within {
+  border-color: var(--ink);
+}
+
+.ask input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 0;
+  font: inherit;
+  font-size: 15px;
+  line-height: 15px;
+  height: 15px;
+}
+
+.ask input::placeholder {
+  color: var(--muted);
+}
+
+.ask button {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ask button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.ask button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ask-wrap {
+  position: relative;
+  width: 574.5px;
+  max-width: 100%;
+}
+
+.error {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ball.shaking,
+  .ball.thinking .answer {
+    animation: none;
+  }
+}

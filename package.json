@@ -1,0 +1,17 @@
+{
+  "name": "magic-jev-ball",
+  "version": "1.0.0",
+  "description": "A Magic 8 Ball powered by TypeSafe's Jev",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test",
+    "start": "node --env-file=.env server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0"
+  }
+}
