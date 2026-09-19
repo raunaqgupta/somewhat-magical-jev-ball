@@ -4,20 +4,16 @@ const input = document.getElementById("question");
 const send = document.getElementById("send");
 const answer = document.getElementById("answer");
 const error = document.getElementById("error");
-const windowEl = ball.querySelector(".window");
 
 // The text the page ships with, restored if a request fails.
 const DEFAULT_TEXT = answer.textContent;
 const SHAKE_MS = 600;
 const CLOUDED = "The ball is clouded. Try again.";
 
-// The 3D ball is an enhancement: if the module or WebGL is unavailable the
-// flat CSS ball stays and shakes instead.
-let ball3d = null;
+// The 3D sphere is an enhancement: if the module or WebGL is unavailable the
+// flat CSS ball stays. Either way the whole ball shakes with the CSS animation.
 import("./ball3d.js")
-  .then((module) => {
-    ball3d = module.createBall(ball, windowEl);
-  })
+  .then((module) => module.createBall(ball))
   .catch(() => {});
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -56,7 +52,6 @@ form.addEventListener("submit", async (event) => {
   error.textContent = "";
   answer.textContent = "…";
   ball.classList.add("thinking", "shaking");
-  ball3d?.tumble(SHAKE_MS);
 
   try {
     // Hold the shake for its full length even when Jev answers faster.

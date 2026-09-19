@@ -29,8 +29,8 @@ npm run deploy
 ## The 3D ball
 
 The ball is a glossy sphere rendered with [three.js](https://threejs.org) (`public/ball3d.js`).
-The answer window stays a DOM element so the text is real text; `public/ball-math.js` places it
-on the sphere as the ball tumbles. If WebGL is unavailable the flat CSS ball is used instead.
+The answer window stays a DOM element on top of the canvas so the text is real text, and the whole
+ball shakes with a CSS animation when you ask. If WebGL is unavailable the flat CSS ball is used instead.
 
 three.js is bundled down to just the classes used (`src/three-entry.js`) into `public/vendor/three.js`,
 which is committed, so there is no build step to run the app. After changing the entry or upgrading
