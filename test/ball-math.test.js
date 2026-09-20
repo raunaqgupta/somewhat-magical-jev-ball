@@ -4,96 +4,163 @@ import {
   BALL_SIZE,
   dragPose,
   easeOutCubic,
-  MAX_TILT,
+  REST_POSE,
   returnPose,
+  rotate,
+  rotationAngle,
   windowPlacement,
   windowTransform,
-  wrapAngle,
 } from "../public/ball-math.js";
 
 const near = (actual, expected, eps = 1e-9) =>
   assert.ok(Math.abs(actual - expected) < eps, `${actual} is not within ${eps} of ${expected}`);
 const RADIUS = BALL_SIZE / 2;
+// Dragging this far (in pixels) turns the ball half a turn, so the far side comes round.
+const HALF_TURN = Math.PI * RADIUS;
 
-test("at rest the window is exactly the design's circle, in place", () => {
-  const p = windowPlacement(0, 0);
-  near(p.dx, 0);
-  near(p.dy, 0);
-  near(p.scale, 1);
-  near(p.opacity, 1);
+// Every direction of drag, in 15 degree steps all the way round.
+const DIRECTIONS = Array.from({ length: 24 }, (_, i) => (i * Math.PI) / 12);
+const drag = (q, distance, direction) =>
+  dragPose(q, Math.cos(direction) * distance, Math.sin(direction) * distance);
+
+// A repeatable spread of poses, reached the way a person would: by dragging around.
+const poses = (count = 200) => {
+  let seed = 7;
+  const rand = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const out = [REST_POSE];
+  let q = REST_POSE;
+  for (let i = 1; i < count; i++) {
+    q = dragPose(q, (rand() - 0.5) * 400, (rand() - 0.5) * 400);
+    out.push(q);
+  }
+  return out;
+};
+
+test("at rest the front is exactly the design's circle, in place, and the back is hidden", () => {
+  const front = windowPlacement(REST_POSE, "front");
+  near(front.dx, 0);
+  near(front.dy, 0);
+  near(front.scale, 1);
+  near(front.opacity, 1);
+
+  const back = windowPlacement(REST_POSE, "back");
+  assert.equal(back.opacity, 0);
+  assert.equal(back.scale, 0);
 });
 
-test("turning the ball moves the window sideways, then behind it", () => {
-  assert.ok(windowPlacement(0.3, 0).dx > 0);
-  assert.ok(windowPlacement(-0.3, 0).dx < 0);
-
-  const edge = windowPlacement(Math.PI / 2, 0);
-  assert.ok(edge.dx > RADIUS - 20, "window reaches the ball's edge");
-  assert.ok(edge.opacity < 0.05, "and is hidden there");
-
-  assert.equal(windowPlacement(Math.PI, 0).opacity, 0);
-  assert.equal(windowPlacement(Math.PI, 0).scale, 0);
+test("dragging follows the pointer: right moves the front right, down moves it down", () => {
+  assert.ok(windowPlacement(dragPose(REST_POSE, 40, 0)).dx > 0);
+  assert.ok(windowPlacement(dragPose(REST_POSE, -40, 0)).dx < 0);
+  assert.ok(windowPlacement(dragPose(REST_POSE, 0, 40)).dy > 0);
+  assert.ok(windowPlacement(dragPose(REST_POSE, 0, -40)).dy < 0);
 });
 
-test("tipping the ball forward or back moves the window vertically", () => {
-  assert.ok(windowPlacement(0, 0.3).dy > 0, "tipping away drops it");
-  assert.ok(windowPlacement(0, -0.3).dy < 0);
+test("one ball radius of drag is one radian of rotation, in any direction", () => {
+  for (const direction of DIRECTIONS) near(rotationAngle(drag(REST_POSE, RADIUS, direction)), 1, 1e-9);
 });
 
-test("the window is only ever squashed, never stretched, and opacity stays in range", () => {
-  for (let y = -Math.PI; y <= Math.PI; y += 0.1) {
-    for (let x = -MAX_TILT; x <= MAX_TILT; x += 0.1) {
-      const p = windowPlacement(y, x);
+test("the back shows up for every direction of rotation", () => {
+  for (const direction of DIRECTIONS) {
+    const q = drag(REST_POSE, HALF_TURN, direction);
+    const back = windowPlacement(q, "back");
+    const label = `direction ${Math.round((direction * 180) / Math.PI)} degrees`;
+    near(back.dx, 0, 1e-6);
+    near(back.dy, 0, 1e-6);
+    near(back.scale, 1, 1e-9);
+    near(back.opacity, 1, 1e-9);
+    assert.equal(windowPlacement(q, "front").opacity, 0, `front still showing at ${label}`);
+  }
+});
+
+test("the back comes into view part-way, in every direction, and the front leaves", () => {
+  for (const direction of DIRECTIONS) {
+    const q = drag(REST_POSE, HALF_TURN * 0.75, direction);
+    assert.ok(windowPlacement(q, "back").opacity > 0, `back hidden at ${direction}`);
+    assert.equal(windowPlacement(q, "front").opacity, 0);
+  }
+});
+
+test("the back is reached by dragging in small moves too, not only in one big one", () => {
+  for (const direction of DIRECTIONS) {
+    let q = REST_POSE;
+    for (let i = 0; i < 200; i++) q = drag(q, HALF_TURN / 200, direction);
+    near(windowPlacement(q, "back").opacity, 1, 1e-6);
+    near(windowPlacement(q, "back").dx, 0, 1e-4);
+    near(windowPlacement(q, "back").dy, 0, 1e-4);
+  }
+});
+
+test("a drag moves the surface the way the pointer moves, from any orientation", () => {
+  const eps = 1e-4; // radians
+  for (const q of poses()) {
+    const before = rotate(q, { x: 0, y: 0, z: 1 });
+    if (before.z < 0.2) continue; // only a point on the near side follows the pointer
+
+    const right = rotate(dragPose(q, eps * RADIUS, 0), { x: 0, y: 0, z: 1 });
+    near(right.x - before.x, eps * before.z, 1e-6);
+    near(right.y - before.y, 0, 1e-6);
+
+    const down = rotate(dragPose(q, 0, eps * RADIUS), { x: 0, y: 0, z: 1 });
+    near(down.y - before.y, -eps * before.z, 1e-6);
+    near(down.x - before.x, 0, 1e-6);
+  }
+});
+
+test("many small drags in one direction equal one big drag", () => {
+  for (const direction of DIRECTIONS) {
+    let small = REST_POSE;
+    for (let i = 0; i < 100; i++) small = drag(small, 3, direction);
+    const big = drag(REST_POSE, 300, direction);
+    const a = rotate(small, { x: 0.3, y: 0.5, z: 0.8 });
+    const b = rotate(big, { x: 0.3, y: 0.5, z: 0.8 });
+    near(a.x, b.x, 1e-9);
+    near(a.y, b.y, 1e-9);
+    near(a.z, b.z, 1e-9);
+  }
+});
+
+test("the pose stays a proper rotation however long the ball is dragged around", () => {
+  let q = REST_POSE;
+  let seed = 3;
+  const rand = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  for (let i = 0; i < 10000; i++) q = dragPose(q, (rand() - 0.5) * 60, (rand() - 0.5) * 60);
+  near(Math.hypot(q.x, q.y, q.z, q.w), 1, 1e-9);
+});
+
+test("the two faces are opposite sides of the ball: never both showing, and mirrored", () => {
+  for (const q of poses()) {
+    const front = windowPlacement(q, "front");
+    const back = windowPlacement(q, "back");
+    assert.ok(front.scale === 0 || back.scale === 0, "both faces visible");
+    near(back.dx, -front.dx, 1e-9);
+    near(back.dy, -front.dy, 1e-9);
+  }
+});
+
+test("a window is only ever squashed and faded, and stays on the ball", () => {
+  for (const q of poses()) {
+    for (const face of ["front", "back"]) {
+      const p = windowPlacement(q, face);
       assert.ok(p.scale >= 0 && p.scale <= 1, `scale ${p.scale}`);
       assert.ok(p.opacity >= 0 && p.opacity <= 1, `opacity ${p.opacity}`);
-      assert.ok(Math.abs(p.dx) <= RADIUS + 1e-9, "stays within the ball's width");
+      assert.ok(Math.hypot(p.dx, p.dy) <= RADIUS + 1e-9, "stays within the ball");
     }
   }
 });
 
+test("rotationAngle is how far from rest by the short way, never more than half a turn", () => {
+  near(rotationAngle(REST_POSE), 0);
+  near(rotationAngle(drag(REST_POSE, HALF_TURN, 0.4)), Math.PI, 1e-9);
+  // Three quarters of a turn is the same orientation as a quarter turn the other way.
+  near(rotationAngle(drag(REST_POSE, HALF_TURN * 1.5, 1.0)), Math.PI / 2, 1e-9);
+  for (const q of poses()) assert.ok(rotationAngle(q) <= Math.PI + 1e-9);
+});
+
 test("windowTransform produces a CSS transform string", () => {
   assert.match(
-    windowTransform(windowPlacement(0, 0)),
+    windowTransform(windowPlacement(REST_POSE)),
     /^translate\(-?0\.00px, -?0\.00px\) rotate\(.+rad\) scaleX\(1\.0000\) rotate\(.+rad\)$/,
   );
-});
-
-test("dragging follows the pointer: right moves the window right, down moves it down", () => {
-  const right = dragPose({ rotX: 0, rotY: 0 }, 40, 0);
-  assert.ok(windowPlacement(right.rotY, right.rotX).dx > 0);
-  const down = dragPose({ rotX: 0, rotY: 0 }, 0, 40);
-  assert.ok(windowPlacement(down.rotY, down.rotX).dy > 0);
-  const left = dragPose({ rotX: 0, rotY: 0 }, -40, 0);
-  assert.ok(windowPlacement(left.rotY, left.rotX).dx < 0);
-});
-
-test("one ball radius of drag is one radian of rotation, and drags accumulate", () => {
-  near(dragPose({ rotX: 0, rotY: 0 }, RADIUS, 0).rotY, 1);
-  near(dragPose({ rotX: 0, rotY: 0 }, 0, RADIUS).rotX, 1);
-  const twice = dragPose(dragPose({ rotX: 0, rotY: 0 }, 10, 5), 10, 5);
-  near(twice.rotY, 20 / RADIUS);
-  near(twice.rotX, 10 / RADIUS);
-});
-
-test("tilting is limited so the window cannot flip over the pole, but turning is not", () => {
-  assert.equal(dragPose({ rotX: 0, rotY: 0 }, 0, 100000).rotX, MAX_TILT);
-  assert.equal(dragPose({ rotX: 0, rotY: 0 }, 0, -100000).rotX, -MAX_TILT);
-  assert.ok(dragPose({ rotX: 0, rotY: 0 }, 100000, 0).rotY > 100);
-});
-
-test("wrapAngle brings any angle to the same orientation within one half turn", () => {
-  near(wrapAngle(0), 0);
-  near(wrapAngle(2 * Math.PI), 0);
-  near(wrapAngle(3 * Math.PI), Math.PI);
-  near(wrapAngle(-3 * Math.PI), Math.PI);
-  near(wrapAngle(Math.PI + 0.1), -Math.PI + 0.1);
-  near(wrapAngle(-Math.PI - 0.1), Math.PI - 0.1);
-  for (let a = -30; a <= 30; a += 0.37) {
-    const w = wrapAngle(a);
-    assert.ok(w > -Math.PI && w <= Math.PI);
-    near(Math.cos(w), Math.cos(a), 1e-9);
-    near(Math.sin(w), Math.sin(a), 1e-9);
-  }
 });
 
 test("easeOutCubic runs from 0 to 1 and clamps", () => {
@@ -103,83 +170,60 @@ test("easeOutCubic runs from 0 to 1 and clamps", () => {
   assert.equal(easeOutCubic(2), 1);
 });
 
-test("the ball returns to exactly where it started, from where it was let go", () => {
-  const from = { rotX: 0.9, rotY: 2.4 };
-  assert.deepEqual(returnPose(from, 0), from);
-  assert.deepEqual(returnPose(from, 1), { rotX: 0, rotY: 0 });
+test("the ball returns to exactly where it started, from wherever it was let go", () => {
+  for (const from of poses()) {
+    const start = returnPose(from, 0);
+    for (const face of ["front", "back"]) {
+      const a = windowPlacement(from, face);
+      const b = windowPlacement(start, face);
+      near(a.dx, b.dx, 1e-9);
+      near(a.dy, b.dy, 1e-9);
+      near(a.opacity, b.opacity, 1e-9);
+    }
+    assert.deepEqual(returnPose(from, 1), REST_POSE);
+  }
 });
 
 test("the return is fast at first and slows down: each equal step covers less than the one before", () => {
-  const from = { rotX: -0.8, rotY: 2.0 };
   const steps = 20;
-  const angle = (t) => {
-    const p = returnPose(from, t);
-    return Math.hypot(p.rotX, p.rotY);
-  };
-  const covered = [];
-  for (let i = 0; i < steps; i++) covered.push(angle(i / steps) - angle((i + 1) / steps));
+  for (const direction of DIRECTIONS) {
+    for (const turn of [0.4, 1.3, 2.4, 3.1]) {
+      const from = drag(REST_POSE, turn * RADIUS, direction);
+      const angle = (t) => rotationAngle(returnPose(from, t));
+      const covered = [];
+      for (let i = 0; i < steps; i++) covered.push(angle(i / steps) - angle((i + 1) / steps));
 
-  for (let i = 1; i < steps; i++) {
-    assert.ok(covered[i] < covered[i - 1], `step ${i} (${covered[i]}) is not slower than step ${i - 1} (${covered[i - 1]})`);
-  }
-  assert.ok(covered[0] > covered[steps - 1] * 10, "the first step is far faster than the last");
-  assert.ok(covered.every((c) => c > 0), "and it never turns back on itself");
-});
-
-test("a ball let go past half a turn returns the short way round", () => {
-  // 3.5 radians is more than half a turn one way, so the short way is back through -2.78.
-  const from = { rotX: 0, rotY: 3.5 };
-  const halfway = returnPose(from, 0.5);
-  assert.ok(Math.abs(wrapAngle(from.rotY)) < Math.PI);
-  assert.ok(Math.abs(halfway.rotY) < Math.abs(wrapAngle(from.rotY)));
-  // The window does not jump at the moment of release: same orientation before and after wrapping.
-  const before = windowPlacement(from.rotY, 0);
-  const after = windowPlacement(returnPose(from, 0).rotY, 0);
-  near(before.dx, after.dx, 1e-9);
-  near(before.opacity, after.opacity, 1e-9);
-});
-
-test("at rest the back is on the far side, hidden, and half a turn brings it to the front", () => {
-  const rest = windowPlacement(0, 0, "back");
-  assert.equal(rest.opacity, 0);
-  assert.equal(rest.scale, 0);
-
-  const turned = windowPlacement(Math.PI, 0, "back");
-  near(turned.dx, 0, 1e-9);
-  near(turned.dy, 0, 1e-9);
-  near(turned.scale, 1);
-  near(turned.opacity, 1);
-
-  // ...and the front has gone round to the far side.
-  assert.equal(windowPlacement(Math.PI, 0, "front").opacity, 0);
-});
-
-test("the two faces are opposite sides of the ball: never both showing, and mirrored", () => {
-  for (let y = -Math.PI; y <= Math.PI; y += 0.1) {
-    for (let x = -MAX_TILT; x <= MAX_TILT; x += 0.1) {
-      const front = windowPlacement(y, x, "front");
-      const back = windowPlacement(y, x, "back");
-      assert.ok(front.scale === 0 || back.scale === 0, `both visible at ${y}, ${x}`);
-      near(back.dx, -front.dx, 1e-9);
-      near(back.dy, -front.dy, 1e-9);
+      for (let i = 1; i < steps; i++) {
+        assert.ok(covered[i] < covered[i - 1], `step ${i} is not slower than step ${i - 1}`);
+      }
+      assert.ok(covered[0] > covered[steps - 1] * 10, "the first step is far faster than the last");
+      assert.ok(covered.every((c) => c > 0), "and it never turns back on itself");
     }
   }
 });
 
-test("turning the ball sideways slides the front off and the back on from the other side", () => {
-  // Turned a little to the right, the front has moved right and the back (behind) left.
-  assert.ok(windowPlacement(0.5, 0, "front").dx > 0);
-  assert.ok(windowPlacement(0.5, 0, "back").dx < 0);
-  // Turned three quarters of the way round, the back is visible again on the near side.
-  const back = windowPlacement(Math.PI * 0.75, 0, "back");
-  assert.ok(back.opacity > 0 && back.scale > 0);
-  assert.ok(windowPlacement(Math.PI * 0.75, 0, "front").opacity === 0);
+test("the return turns about one axis, the short way round", () => {
+  for (const from of poses(60)) {
+    if (rotationAngle(from) < 0.05) continue;
+    const mid = returnPose(from, 0.5);
+    assert.ok(rotationAngle(mid) < rotationAngle(from));
+    // Same axis all the way: the vector parts are parallel (or opposite, for -q).
+    const cross = {
+      x: from.y * mid.z - from.z * mid.y,
+      y: from.z * mid.x - from.x * mid.z,
+      z: from.x * mid.y - from.y * mid.x,
+    };
+    near(Math.hypot(cross.x, cross.y, cross.z), 0, 1e-9);
+  }
 });
 
-test("the back only ever squashes and fades too", () => {
-  for (let y = -Math.PI; y <= Math.PI; y += 0.1) {
-    const p = windowPlacement(y, 0.3, "back");
-    assert.ok(p.scale >= 0 && p.scale <= 1);
-    assert.ok(p.opacity >= 0 && p.opacity <= 1);
+test("a pose written as its negative is the same orientation and returns the same way", () => {
+  const from = drag(REST_POSE, 2 * RADIUS, 0.7);
+  const negated = { x: -from.x, y: -from.y, z: -from.z, w: -from.w };
+  for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+    const a = windowPlacement(returnPose(from, t), "front");
+    const b = windowPlacement(returnPose(negated, t), "front");
+    near(a.dx, b.dx, 1e-9);
+    near(a.dy, b.dy, 1e-9);
   }
 });

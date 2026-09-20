@@ -3,7 +3,14 @@
 // pointer around the sphere; when it is let go the ball rotates back to rest,
 // starting fast and slowing down. Works whether or not the 3D sphere loaded,
 // since only the windows move.
-import { dragPose, RETURN_MS, returnPose, windowPlacement, windowTransform } from "./ball-math.js";
+import {
+  dragPose,
+  REST_POSE,
+  RETURN_MS,
+  returnPose,
+  windowPlacement,
+  windowTransform,
+} from "./ball-math.js";
 
 const ball = document.getElementById("ball");
 const faces = ball
@@ -14,14 +21,13 @@ const faces = ball
   : [];
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-const REST = { rotX: 0, rotY: 0 };
-let pose = REST;
+let pose = REST_POSE;
 let drag = null;
 let frame = 0;
 
 function render() {
   for (const { face, el } of faces) {
-    const placement = windowPlacement(pose.rotY, pose.rotX, face);
+    const placement = windowPlacement(pose, face);
     el.style.transform = windowTransform(placement);
     el.style.opacity = String(placement.opacity);
   }
@@ -29,7 +35,7 @@ function render() {
 
 // Back to the plain CSS look, which is exactly the design: front showing, back hidden.
 function rest() {
-  pose = REST;
+  pose = REST_POSE;
   for (const { el } of faces) {
     el.style.transform = "";
     el.style.opacity = "";
