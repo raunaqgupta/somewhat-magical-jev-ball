@@ -42,7 +42,7 @@ The ball has a front and a back (Paper designs "front" and the ball's back). The
 window with the answer; the back is a white window reading `jev 1.13`, the model version.
 
 The ball is a 3D model (`public/ball3d.js`): a glossy sphere with both faces on it as part of the
-model, so they turn with it and **text goes upside down when the ball is flipped over**, as a label
+model, all lit by a single light (so the gloss catches the faces too), so they turn with it and **text goes upside down when the ball is flipped over**, as a label
 on a real ball would. The faces are drawn from the same measurements as the designs
 (`public/face-texture.js`). The answer stays real text in the page for screen readers, and the front
 face is redrawn from it whenever it changes.

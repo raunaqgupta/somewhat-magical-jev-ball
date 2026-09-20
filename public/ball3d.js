@@ -6,12 +6,10 @@
 // The answer stays real text in the page (a screen-reader live region); the
 // front face is drawn from it, and redrawn whenever it changes.
 import {
-  AmbientLight,
   CanvasTexture,
   DirectionalLight,
   Group,
   Mesh,
-  MeshBasicMaterial,
   MeshPhysicalMaterial,
   OrthographicCamera,
   Scene,
@@ -29,6 +27,9 @@ const FACE_RADIUS = WINDOW_SIZE / BALL_SIZE; // as a fraction of the ball's radi
 const SURFACE = 1.002;
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
+// Towards the light from the ball: up, left and in front of it.
+const LIGHT_DIRECTION = [-0.5, 0.55, 0.67];
+const LIGHT_INTENSITY = 4.5;
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
@@ -55,7 +56,7 @@ export function faceGeometry(side) {
 }
 
 /**
- * The model, its lights and the camera. Needs no WebGL, so it is testable in Node.
+ * The model, its light and the camera. Needs no WebGL, so it is testable in Node.
  * `maps` are the textures for the two faces.
  */
 export function buildScene({ frontMap = null, backMap = null } = {}) {
@@ -64,34 +65,25 @@ export function buildScene({ frontMap = null, backMap = null } = {}) {
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
   camera.position.z = 5;
 
-  const sphere = new Mesh(
-    new SphereGeometry(1, 96, 64),
-    new MeshPhysicalMaterial({
-      color: 0x030303,
-      roughness: 0.3,
-      metalness: 0,
-      clearcoat: 1,
-      clearcoatRoughness: 0.1,
-    }),
-  );
-  // The faces are unlit, so their colours are exactly the design's.
-  const front = new Mesh(faceGeometry(1), new MeshBasicMaterial({ map: frontMap }));
-  const back = new Mesh(faceGeometry(-1), new MeshBasicMaterial({ map: backMap }));
+  // The sphere and both faces are lit by the same light and share a glossy finish.
+  const finish = { roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.1 };
+  const sphere = new Mesh(new SphereGeometry(1, 96, 64), new MeshPhysicalMaterial({ color: 0x030303, ...finish }));
+  const front = new Mesh(faceGeometry(1), new MeshPhysicalMaterial({ map: frontMap, ...finish }));
+  const back = new Mesh(faceGeometry(-1), new MeshPhysicalMaterial({ map: backMap, ...finish }));
 
-  // Turning the ball turns everything in this group; the lights stay where they are.
+  // Turning the ball turns everything in this group; the light stays where it is.
   const ball = new Group();
   ball.add(sphere, front, back);
 
+  // The only light: from the upper left and in front of the ball, so a face turned
+  // to the viewer is lit and the gloss catches it.
+  const light = new DirectionalLight(0xffffff, LIGHT_INTENSITY);
+  light.position.set(...LIGHT_DIRECTION).multiplyScalar(5);
+
   const scene = new Scene();
-  scene.add(ball, new AmbientLight(0xffffff, 0.15));
+  scene.add(ball, light);
 
-  const key = new DirectionalLight(0xffffff, 3);
-  key.position.set(-0.78, 0.5, -0.38).multiplyScalar(5);
-  const kicker = new DirectionalLight(0xffffff, 1.2);
-  kicker.position.set(0.67, -0.74, 0.1).multiplyScalar(5);
-  scene.add(key, kicker);
-
-  return { scene, camera, ball, sphere, front, back };
+  return { scene, camera, ball, sphere, front, back, light };
 }
 
 function faceTexture(paint, text, renderer) {
