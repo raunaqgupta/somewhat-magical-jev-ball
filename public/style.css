@@ -177,7 +177,9 @@ body {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 12px;
+  /* 10 + 19 + 10 + the 1px borders is the design's 41px. The text needs the 19px: at
+     15px a line is about 18px tall, and any less cuts the tails off g, y, p, q and j. */
+  padding: 10px 12px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -198,8 +200,8 @@ body {
   padding: 0;
   font: inherit;
   font-size: 15px;
-  line-height: 15px;
-  height: 15px;
+  line-height: 19px;
+  height: 19px;
 }
 
 .ask input::placeholder {
