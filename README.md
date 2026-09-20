@@ -44,7 +44,7 @@ Each question is sent to Jev once, with eleven independent yes/no (noul) judgmen
 
 | Signal | Role |
 | --- | --- |
-| `fact`, `truth` | `fact` (above 0.75, `FACT_THRESHOLD`) says the question is about a fact; only then is `truth` used. Above 0.75 (`TRUTH_JUDGMENT`) the answer is affirmative, below 0.25 negative, as emphatic as `certain`. In between, and for opinions and predictions, the rules below decide |
+| `fact`, `truth` | `fact` (above 0.8, `FACT_THRESHOLD`) says the question is about a fact; only then is `truth` used. Above 0.75 (`TRUTH_JUDGMENT`) the answer is affirmative, below 0.25 negative, as emphatic as `certain`. In between, and for opinions and predictions, the rules below decide |
 | `snarky` | Above 0.50: "Don't count on it", whatever the question asks |
 | `selfDeprecating` | Above 0.50: "As I see it, yes", whatever the question asks |
 | `favorable`, `certain` | Direction and strength: pick from 10 affirmative or 5 negative answers, most to least emphatic |
