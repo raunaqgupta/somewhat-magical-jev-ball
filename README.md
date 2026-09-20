@@ -41,7 +41,7 @@ three, regenerate it with `npm run vendor:three`.
 The ball has a front and a back (Paper designs "front" and the ball's back). The front is the dark
 window with the answer; the back is a white window reading `jev 1.13`, the model version.
 
-The ball is a 3D model (`public/ball3d.js`): a glossy sphere with both faces on it as part of the
+The ball is a 3D model (`public/ball3d.js`): a sphere with both faces on it as part of the
 model, all lit by a single ambient light (so each face shows in its own colours from whichever way
 it is turned, with no shading or highlights), so they turn with it and **text goes upside down when the ball is flipped over**, as a label
 on a real ball would. The faces are drawn from the same measurements as the designs
