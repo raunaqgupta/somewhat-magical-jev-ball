@@ -165,9 +165,9 @@ test("truth only applies to a question about a fact", () => {
   assert.equal(run({ fact: 0.2, truth: 0.9, favorable: 0, certain: 1 }).category, "negative");
 });
 
-test("a fact is only recognised above 0.75", () => {
-  assert.equal(run({ fact: 0.75, truth: 0.05, favorable: 1, certain: 1 }).category, "affirmative");
-  assert.equal(run({ fact: 0.751, truth: 0.05, favorable: 1, certain: 1 }).category, "negative");
+test("a fact is only recognised above 0.8", () => {
+  assert.equal(run({ fact: 0.8, truth: 0.05, favorable: 1, certain: 1 }).category, "affirmative");
+  assert.equal(run({ fact: 0.801, truth: 0.05, favorable: 1, certain: 1 }).category, "negative");
 });
 
 test("an opinion can still hedge", () => {
