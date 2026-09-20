@@ -26,6 +26,17 @@ npx wrangler secret put TYPESAFE_API_KEY   # once
 npm run deploy
 ```
 
+## The header
+
+A tab at the top left of the page reads "Magic Jev Ball" in the Yellowtail script face, as in the Paper
+design (`<header class="site-header">` with the page's `<h1>`). It hangs from the left edge: square on
+the left, rounded on the right, with a 1px border on the other three sides.
+
+Yellowtail is served from this site (`public/fonts/`, the Latin subset as WOFF2, preloaded), not from
+Google Fonts, so the page makes no third-party request for it. It is licensed under the Apache License
+2.0, and its license and copyright notice ship alongside it. If the font cannot load, the title shows
+in the system font.
+
 ## The 3D ball
 
 The ball is a sphere rendered with [three.js](https://threejs.org) (`public/ball3d.js`).
