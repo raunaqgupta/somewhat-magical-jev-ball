@@ -36,15 +36,32 @@ three.js is bundled down to just the classes used (`src/three-entry.js`) into `p
 which is committed, so there is no build step to run the app. After changing the entry or upgrading
 three, regenerate it with `npm run vendor:three`.
 
+## The live background
+
+Questions asked by any visitor drift across the background of everyone else's page as faint,
+dashed pills, at random positions and sizes so they read as having depth, then fade away
+(`public/background.js`, layout rules in `public/blurb-layout.js`).
+
+- A `Feed` Durable Object (`src/worker.js`) holds one WebSocket per visitor at `/api/feed` and
+  relays each question to all of them. **Nothing is stored**: a question is only seen by visitors
+  who are connected when it is asked, and the background is empty when the site is quiet.
+- Questions containing private personal information (a private individual's name, phone number,
+  email or home address) are answered but never shown to others. This is the `personal` noul,
+  scored in the same Jev request, hidden above `PERSONAL_THRESHOLD` (0.3). Offensive questions are
+  not filtered.
+- Question text is only ever inserted as plain text. WebSocket connections are limited to 20 a
+  minute per IP.
+
 ## How a decision is made
 
-Each question is sent to Jev once, with eleven independent yes/no (noul) judgments
+Each question is sent to Jev once, with twelve independent yes/no (noul) judgments
 (`lib/decide.js`). Code then combines them into one of the 20 canonical answers
 (`lib/answers.js`, from [Wikipedia](https://en.wikipedia.org/wiki/Magic_8_Ball#Possible_answers)):
 
 | Signal | Role |
 | --- | --- |
 | `fact`, `truth` | `fact` (above 0.8, `FACT_THRESHOLD`) says the question is about a fact; only then is `truth` used. Above 0.75 (`TRUTH_JUDGMENT`) the answer is affirmative, below 0.25 negative, as emphatic as `certain`. In between, and for opinions and predictions, the rules below decide |
+| `personal` | Does not change the answer; above 0.3 the question is kept out of the live background |
 | `snarky` | Above 0.50: "Don't count on it", whatever the question asks |
 | `selfDeprecating` | Above 0.50: "As I see it, yes", whatever the question asks |
 | `favorable`, `certain` | Direction and strength: pick from 10 affirmative or 5 negative answers, most to least emphatic |

@@ -24,7 +24,31 @@ body {
   font-family: var(--font);
 }
 
+/* Questions from other visitors, drifting behind everything else. */
+.background {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blurb {
+  position: absolute;
+  max-width: 260px;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 9999px;
+  color: var(--window-text);
+  font-family: var(--font);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+}
+
 .stage {
+  position: relative;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -108,6 +132,7 @@ body {
   align-items: center;
   width: 100%;
   padding: 12px;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: clip;
