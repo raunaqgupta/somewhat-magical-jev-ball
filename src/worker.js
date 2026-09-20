@@ -3,6 +3,7 @@
 // TypeSafe API key stays server-side, and relays each shareable question to
 // every connected visitor through the Feed Durable Object.
 import { DurableObject } from "cloudflare:workers";
+import { parseClientId } from "../lib/client-id.js";
 import { askJev } from "../lib/decide.js";
 
 const MAX_QUESTION_LENGTH = 280;
@@ -25,13 +26,17 @@ export class Feed extends DurableObject {
       return new Response("Expected a WebSocket", { status: 426 });
     }
     const { 0: client, 1: server } = new WebSocketPair();
-    this.ctx.acceptWebSocket(server);
+    // Tag the socket with its browser's id so that browser's own questions can be skipped.
+    const id = parseClientId(new URL(request.url).searchParams.get("client"));
+    this.ctx.acceptWebSocket(server, id ? [id] : []);
     return new Response(null, { status: 101, webSocket: client });
   }
 
-  publish(question) {
+  /** Send `question` to every visitor except the browser that asked it, if known. */
+  publish(question, askedBy = null) {
     const message = JSON.stringify({ question });
     for (const socket of this.ctx.getWebSockets()) {
+      if (askedBy && this.ctx.getTags(socket).includes(askedBy)) continue;
       try {
         socket.send(message);
       } catch {
@@ -66,10 +71,13 @@ async function handleAsk(request, env, ctx) {
   }
 
   let question;
+  let askedBy;
   try {
     const raw = await request.text();
     if (raw.length > MAX_BODY_BYTES) return json(413, { error: "Invalid request." });
-    question = JSON.parse(raw)?.question;
+    const body = JSON.parse(raw);
+    question = body?.question;
+    askedBy = parseClientId(body?.clientId);
   } catch {
     return json(400, { error: "Invalid request." });
   }
@@ -83,7 +91,7 @@ async function handleAsk(request, env, ctx) {
   try {
     const { answer, category, shareable } = await askJev(question, env.TYPESAFE_API_KEY);
     // Show the question to other visitors, unless it contains personal information.
-    if (shareable) ctx.waitUntil(feed(env).publish(question.replace(/\s+/g, " ")));
+    if (shareable) ctx.waitUntil(feed(env).publish(question.replace(/\s+/g, " "), askedBy));
     return json(200, { answer, category });
   } catch (err) {
     console.error("Jev request failed:", err.message);

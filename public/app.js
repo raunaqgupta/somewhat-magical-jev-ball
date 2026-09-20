@@ -1,3 +1,5 @@
+import { clientId } from "./client-id.js";
+
 const ball = document.getElementById("ball");
 const form = document.getElementById("ask");
 const input = document.getElementById("question");
@@ -22,7 +24,7 @@ async function ask(question) {
   const res = await fetch("/api/ask", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, clientId }),
   }).catch(() => {
     throw new Error(CLOUDED);
   });
