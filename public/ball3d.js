@@ -1,4 +1,4 @@
-// The ball as a 3D model with three.js: a glossy black sphere with the two faces
+// The ball as a 3D model with three.js: a black sphere with the two faces
 // (the answer on the front, the model version on the back) as part of the model.
 // The faces rotate with the sphere, so their text turns upside down when the ball
 // is flipped over, as a label on a real ball would.
