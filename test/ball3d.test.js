@@ -58,16 +58,49 @@ function textureAxes(q, face) {
   };
 }
 
-test("the model is a sphere and its two faces, turned together, plus three lights, seen by an orthographic camera", () => {
+test("the model is a sphere and its two faces, turned together, seen by an orthographic camera", () => {
   const { scene, camera, ball } = buildScene();
-  assert.deepEqual(scene.children.map((c) => c.type).sort(), [
-    "AmbientLight",
-    "DirectionalLight",
-    "DirectionalLight",
-    "Group",
-  ]);
+  assert.deepEqual(scene.children.map((c) => c.type).sort(), ["DirectionalLight", "Group"]);
   assert.deepEqual(ball.children.map((c) => c.type), ["Mesh", "Mesh", "Mesh"]);
   assert.equal(camera.type, "OrthographicCamera");
+});
+
+test("there is exactly one light source in the scene, whatever kind it is", () => {
+  const { scene } = buildScene();
+  const lights = [];
+  scene.traverse((object) => {
+    if (object.isLight) lights.push(object);
+  });
+  assert.equal(lights.length, 1);
+  assert.equal(lights[0].type, "DirectionalLight");
+  // No ambient or hemisphere fill, no lights hiding inside the ball, no environment map.
+  assert.equal(scene.environment, null);
+  assert.equal(scene.background, null);
+});
+
+test("the light is on the viewer's side and up and to the left, so a face turned to the viewer is lit", () => {
+  const { light } = buildScene();
+  const direction = light.position.clone().normalize();
+  assert.ok(direction.z > 0.5, "in front of the ball");
+  assert.ok(direction.y > 0, "above it");
+  assert.ok(direction.x < 0, "to its left");
+  // A face at rest, or a back turned to face the viewer, points at +z: lit head-on enough to read.
+  assert.ok(direction.z > 0.6, `a face turned to the viewer would be lit at only ${direction.z.toFixed(2)}`);
+});
+
+test("the sphere and both faces are lit by it and share one glossy finish, and the faces carry their textures", () => {
+  const maps = { frontMap: { name: "front" }, backMap: { name: "back" } };
+  const { sphere, front, back } = buildScene(maps);
+  for (const mesh of [sphere, front, back]) {
+    // A material lit by lights, not an unlit one that ignores them.
+    assert.equal(mesh.material.type, "MeshPhysicalMaterial");
+    assert.equal(mesh.material.roughness, sphere.material.roughness);
+    assert.equal(mesh.material.clearcoat, sphere.material.clearcoat);
+    assert.equal(mesh.material.clearcoatRoughness, sphere.material.clearcoatRoughness);
+  }
+  assert.equal(front.material.map, maps.frontMap);
+  assert.equal(back.material.map, maps.backMap);
+  assert.equal(sphere.material.map, null);
 });
 
 test("the sphere exactly fills the canvas: its extremes land on the canvas edges", () => {
@@ -201,12 +234,10 @@ test("a face is in the model on the side it should be: the front centre at rest,
 test("the vendored three.js bundle exports exactly what the ball imports", async () => {
   const vendored = await import("../public/vendor/three.js");
   assert.deepEqual(Object.keys(vendored).sort(), [
-    "AmbientLight",
     "CanvasTexture",
     "DirectionalLight",
     "Group",
     "Mesh",
-    "MeshBasicMaterial",
     "MeshPhysicalMaterial",
     "OrthographicCamera",
     "SRGBColorSpace",
