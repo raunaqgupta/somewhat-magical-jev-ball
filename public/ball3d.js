@@ -6,8 +6,8 @@
 // The answer stays real text in the page (a screen-reader live region); the
 // front face is drawn from it, and redrawn whenever it changes.
 import {
+  AmbientLight,
   CanvasTexture,
-  DirectionalLight,
   Group,
   Mesh,
   MeshPhysicalMaterial,
@@ -27,9 +27,11 @@ const FACE_RADIUS = WINDOW_SIZE / BALL_SIZE; // as a fraction of the ball's radi
 const SURFACE = 1.002;
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
-// Towards the light from the ball: up, left and in front of it.
-const LIGHT_DIRECTION = [-0.5, 0.55, 0.67];
-const LIGHT_INTENSITY = 4.5;
+// three.js divides the light on a diffuse surface by pi, so an ambient light of
+// intensity pi would show a perfectly diffuse surface at its own colour. The glossy
+// material gives up a share of that to its specular layer (measured: a white face
+// came out as 246 of 255), so this is a little more, to bring white back to white.
+const LIGHT_INTENSITY = Math.PI * 1.08;
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
@@ -65,7 +67,7 @@ export function buildScene({ frontMap = null, backMap = null } = {}) {
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
   camera.position.z = 5;
 
-  // The sphere and both faces are lit by the same light and share a glossy finish.
+  // The sphere and both faces are lit by the same light and share one finish.
   const finish = { roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.1 };
   const sphere = new Mesh(new SphereGeometry(1, 96, 64), new MeshPhysicalMaterial({ color: 0x030303, ...finish }));
   const front = new Mesh(faceGeometry(1), new MeshPhysicalMaterial({ map: frontMap, ...finish }));
@@ -75,10 +77,10 @@ export function buildScene({ frontMap = null, backMap = null } = {}) {
   const ball = new Group();
   ball.add(sphere, front, back);
 
-  // The only light: from the upper left and in front of the ball, so a face turned
-  // to the viewer is lit and the gloss catches it.
-  const light = new DirectionalLight(0xffffff, LIGHT_INTENSITY);
-  light.position.set(...LIGHT_DIRECTION).multiplyScalar(5);
+  // The only light: an ambient light, which lights everything evenly from every
+  // direction, so the ball has no shading or highlights and each face shows in
+  // its own colours from whichever way it is turned.
+  const light = new AmbientLight(0xffffff, LIGHT_INTENSITY);
 
   const scene = new Scene();
   scene.add(ball, light);
