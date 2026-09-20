@@ -14,6 +14,7 @@ const quiet = {
   unfocused: 0,
   snarky: 0,
   selfDeprecating: 0,
+  fact: 0,
 };
 const run = (overrides) => decide({ ...quiet, ...overrides });
 
@@ -104,4 +105,33 @@ test("tone overrides hedging and non-question handling", () => {
 
 test("snark wins when both tones fire", () => {
   assert.equal(run({ snarky: 0.8, selfDeprecating: 0.8 }).answer, TONE.snarky);
+});
+
+test("a question about a fact gets an affirmative answer, whichever way it leans", () => {
+  for (const favorable of [0, 0.5, 1]) {
+    const r = run({ fact: 0.76, favorable, certain: 0.5 });
+    assert.equal(r.category, "affirmative");
+    assert.ok(AFFIRMATIVE.includes(r.answer), r.answer);
+  }
+});
+
+test("fact answers are as emphatic as the certainty", () => {
+  assert.equal(run({ fact: 0.9, favorable: 0, certain: 1 }).answer, "It is certain");
+  assert.equal(run({ fact: 0.9, favorable: 0, certain: 0 }).answer, "Signs point to yes");
+});
+
+test("a fact is only routed above the threshold of 0.75", () => {
+  const atThreshold = run({ fact: 0.75, favorable: 0, certain: 1 });
+  assert.equal(atThreshold.category, "negative");
+  assert.equal(run({ fact: 0.751, favorable: 0, certain: 1 }).category, "affirmative");
+});
+
+test("a fact beats hedging", () => {
+  assert.equal(run({ fact: 0.9, certain: 1, later: 0.95, hazy: 0.95 }).answer, "It is certain");
+});
+
+test("tone and non-questions beat a fact", () => {
+  assert.equal(run({ fact: 0.9, snarky: 0.9, certain: 1 }).answer, TONE.snarky);
+  assert.equal(run({ fact: 0.9, selfDeprecating: 0.9, certain: 1 }).answer, TONE.selfDeprecating);
+  assert.equal(run({ fact: 0.9, unfocused: 0.9, certain: 1 }).answer, NON_COMMITTAL.unfocused);
 });
