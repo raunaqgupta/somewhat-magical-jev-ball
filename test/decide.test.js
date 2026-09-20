@@ -15,8 +15,11 @@ const quiet = {
   snarky: 0,
   selfDeprecating: 0,
   truth: 0.5,
+  fact: 0,
 };
 const run = (overrides) => decide({ ...quiet, ...overrides });
+// A question about a fact, so that `truth` applies.
+const factual = (overrides) => run({ fact: 0.9, ...overrides });
 
 test("the answer pool is exactly the 20 canonical answers", () => {
   const all = [...AFFIRMATIVE, ...NEGATIVE, ...Object.values(NON_COMMITTAL)];
@@ -109,7 +112,7 @@ test("snark wins when both tones fire", () => {
 
 test("a clearly true answer is affirmative, whichever way the lean points", () => {
   for (const favorable of [0, 0.5, 1]) {
-    const r = run({ truth: 0.76, favorable, certain: 0.5 });
+    const r = factual({ truth: 0.76, favorable, certain: 0.5 });
     assert.equal(r.category, "affirmative");
     assert.ok(AFFIRMATIVE.includes(r.answer), r.answer);
   }
@@ -117,40 +120,56 @@ test("a clearly true answer is affirmative, whichever way the lean points", () =
 
 test("a clearly false answer is negative, whichever way the lean points", () => {
   for (const favorable of [0, 0.5, 1]) {
-    const r = run({ truth: 0.24, favorable, certain: 0.5 });
+    const r = factual({ truth: 0.24, favorable, certain: 0.5 });
     assert.equal(r.category, "negative");
     assert.ok(NEGATIVE.includes(r.answer), r.answer);
   }
 });
 
 test("truth answers are as emphatic as the certainty", () => {
-  assert.equal(run({ truth: 0.95, certain: 1 }).answer, "It is certain");
-  assert.equal(run({ truth: 0.95, certain: 0 }).answer, "Signs point to yes");
-  assert.equal(run({ truth: 0.05, certain: 1 }).answer, "My reply is no");
-  assert.equal(run({ truth: 0.05, certain: 0 }).answer, "Very doubtful");
+  assert.equal(factual({ truth: 0.95, certain: 1 }).answer, "It is certain");
+  assert.equal(factual({ truth: 0.95, certain: 0 }).answer, "Signs point to yes");
+  assert.equal(factual({ truth: 0.05, certain: 1 }).answer, "My reply is no");
+  assert.equal(factual({ truth: 0.05, certain: 0 }).answer, "Very doubtful");
 });
 
 test("truth routes only above 0.75 and below 0.25", () => {
   // At the cutoffs the answer is not decisive, so the lean decides instead.
-  assert.equal(run({ truth: 0.75, favorable: 0, certain: 1 }).category, "negative");
-  assert.equal(run({ truth: 0.751, favorable: 0, certain: 1 }).category, "affirmative");
-  assert.equal(run({ truth: 0.25, favorable: 1, certain: 1 }).category, "affirmative");
-  assert.equal(run({ truth: 0.249, favorable: 1, certain: 1 }).category, "negative");
+  assert.equal(factual({ truth: 0.75, favorable: 0, certain: 1 }).category, "negative");
+  assert.equal(factual({ truth: 0.751, favorable: 0, certain: 1 }).category, "affirmative");
+  assert.equal(factual({ truth: 0.25, favorable: 1, certain: 1 }).category, "affirmative");
+  assert.equal(factual({ truth: 0.249, favorable: 1, certain: 1 }).category, "negative");
 });
 
 test("an undecided truth falls through to the lean and to hedging", () => {
-  assert.equal(run({ truth: 0.5, favorable: 1, certain: 1 }).answer, "It is certain");
-  assert.equal(run({ truth: 0.5, favorable: 0, certain: 1 }).answer, "My reply is no");
-  assert.equal(run({ truth: 0.5, later: 0.95 }).answer, NON_COMMITTAL.later);
+  assert.equal(factual({ truth: 0.5, favorable: 1, certain: 1 }).answer, "It is certain");
+  assert.equal(factual({ truth: 0.5, favorable: 0, certain: 1 }).answer, "My reply is no");
+  assert.equal(factual({ truth: 0.5, later: 0.95 }).answer, NON_COMMITTAL.later);
 });
 
 test("a decisive truth beats hedging", () => {
-  assert.equal(run({ truth: 0.9, certain: 1, later: 0.95, hazy: 0.95 }).answer, "It is certain");
-  assert.equal(run({ truth: 0.1, certain: 1, later: 0.95, hazy: 0.95 }).answer, "My reply is no");
+  assert.equal(factual({ truth: 0.9, certain: 1, later: 0.95, hazy: 0.95 }).answer, "It is certain");
+  assert.equal(factual({ truth: 0.1, certain: 1, later: 0.95, hazy: 0.95 }).answer, "My reply is no");
 });
 
 test("tone and non-questions beat truth", () => {
-  assert.equal(run({ truth: 0.9, snarky: 0.9, certain: 1 }).answer, TONE.snarky);
-  assert.equal(run({ truth: 0.1, selfDeprecating: 0.9, certain: 1 }).answer, TONE.selfDeprecating);
-  assert.equal(run({ truth: 0.9, unfocused: 0.9, certain: 1 }).answer, NON_COMMITTAL.unfocused);
+  assert.equal(factual({ truth: 0.9, snarky: 0.9, certain: 1 }).answer, TONE.snarky);
+  assert.equal(factual({ truth: 0.1, selfDeprecating: 0.9, certain: 1 }).answer, TONE.selfDeprecating);
+  assert.equal(factual({ truth: 0.9, unfocused: 0.9, certain: 1 }).answer, NON_COMMITTAL.unfocused);
+});
+
+test("truth only applies to a question about a fact", () => {
+  // The same clearly-false truth is ignored for an opinion, so the lean decides.
+  const opinion = run({ fact: 0.2, truth: 0.1, favorable: 1, certain: 1 });
+  assert.deepEqual(opinion, { category: "affirmative", answer: "It is certain" });
+  assert.equal(run({ fact: 0.2, truth: 0.9, favorable: 0, certain: 1 }).category, "negative");
+});
+
+test("a fact is only recognised above 0.75", () => {
+  assert.equal(run({ fact: 0.75, truth: 0.05, favorable: 1, certain: 1 }).category, "affirmative");
+  assert.equal(run({ fact: 0.751, truth: 0.05, favorable: 1, certain: 1 }).category, "negative");
+});
+
+test("an opinion can still hedge", () => {
+  assert.equal(run({ fact: 0.1, truth: 0.1, later: 0.95 }).answer, NON_COMMITTAL.later);
 });
