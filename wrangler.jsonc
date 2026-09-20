@@ -9,10 +9,20 @@
     "run_worker_first": ["/api/*"]
   },
   "routes": [{ "pattern": "magicjevball.raunaqgupta.com", "custom_domain": true }],
+  "durable_objects": {
+    "bindings": [{ "name": "FEED", "class_name": "Feed" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Feed"] }],
   "ratelimits": [
     {
       "name": "RATE_LIMITER",
       "namespace_id": "4021",
+      "simple": { "limit": 20, "period": 60 }
+    },
+    {
+      // WebSocket connections to the live feed, per IP.
+      "name": "FEED_LIMITER",
+      "namespace_id": "4022",
       "simple": { "limit": 20, "period": 60 }
     }
   ]

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decide } from "../lib/decide.js";
+import { decide, isShareable } from "../lib/decide.js";
 import { AFFIRMATIVE, NEGATIVE, NON_COMMITTAL, TONE } from "../lib/answers.js";
 
 // Signals with everything quiet; override per case.
@@ -172,4 +172,15 @@ test("a fact is only recognised above 0.8", () => {
 
 test("an opinion can still hedge", () => {
   assert.equal(run({ fact: 0.1, truth: 0.1, later: 0.95 }).answer, NON_COMMITTAL.later);
+});
+
+test("a question is shareable unless it contains personal information", () => {
+  assert.equal(isShareable({ personal: 0.05 }), true);
+  assert.equal(isShareable({ personal: 0.3 }), true);
+  assert.equal(isShareable({ personal: 0.31 }), false);
+  assert.equal(isShareable({ personal: 0.98 }), false);
+});
+
+test("personal information does not change the answer", () => {
+  assert.deepEqual(run({ personal: 0.99, favorable: 1, certain: 1 }), run({ favorable: 1, certain: 1 }));
 });
