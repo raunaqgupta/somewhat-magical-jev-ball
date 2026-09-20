@@ -1,0 +1,8 @@
+Yellowtail (yellowtail-latin.woff2, the Latin subset)
+
+Copyright (c) 2011 by Brian J. Bonislawsky DBA Astigmatic (AOETI). All rights reserved.
+Available under the Apache License, Version 2.0: see yellowtail-LICENSE.txt in this
+folder, or http://www.apache.org/licenses/LICENSE-2.0.html
+
+Source: https://github.com/google/fonts/tree/main/apache/yellowtail
+Served from here, rather than from Google Fonts, so the page makes no third-party request for it.
