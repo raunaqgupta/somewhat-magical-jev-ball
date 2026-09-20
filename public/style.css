@@ -67,9 +67,19 @@ body {
   border-radius: 50%;
   background: var(--ink);
   overflow: clip;
+  /* Drag to rotate: keep the browser from scrolling, zooming or selecting instead. */
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ball.is-dragging {
+  cursor: grabbing;
 }
 
 .window {
+  will-change: transform;
   position: absolute;
   top: 18px;
   left: 62px;

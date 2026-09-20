@@ -36,6 +36,14 @@ three.js is bundled down to just the classes used (`src/three-entry.js`) into `p
 which is committed, so there is no build step to run the app. After changing the entry or upgrading
 three, regenerate it with `npm run vendor:three`.
 
+## Rotating the ball
+
+Drag the ball with a mouse or a finger to rotate it. The answer window follows the pointer around
+the sphere (turning, squashing and fading as it goes behind), and when you let go the ball rotates
+back to rest over 800ms, fast at first and slowing down (ease-out cubic). Catching it mid-return
+picks it up again. With `prefers-reduced-motion` it snaps back instead. The geometry is in
+`public/ball-math.js` and the pointer handling in `public/ball-rotate.js`.
+
 ## The live background
 
 Questions asked by any visitor drift across the background of everyone else's page as faint,
