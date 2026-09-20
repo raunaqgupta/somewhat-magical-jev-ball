@@ -2,6 +2,7 @@
 // background. Purely decorative: it never touches the ball or the input, and the
 // page works the same if the feed is unavailable.
 import { blurbLook, estimateSize, pickMotion, pickPosition } from "./blurb-layout.js";
+import { clientId } from "./client-id.js";
 
 const layer = document.getElementById("background");
 const MAX_BLURBS = 24;
@@ -62,7 +63,7 @@ let delay = RECONNECT_MIN_MS;
 
 function connect() {
   const scheme = location.protocol === "https:" ? "wss:" : "ws:";
-  const socket = new WebSocket(`${scheme}//${location.host}/api/feed`);
+  const socket = new WebSocket(`${scheme}//${location.host}/api/feed?client=${clientId}`);
   let ping;
 
   socket.addEventListener("open", () => {

@@ -49,6 +49,10 @@ dashed pills, at random positions and sizes so they read as having depth, then f
   email or home address) are answered but never shown to others. This is the `personal` noul,
   scored in the same Jev request, hidden above `PERSONAL_THRESHOLD` (0.3). Offensive questions are
   not filtered.
+- A visitor never sees their own questions. Each browser has a random id kept in `localStorage`
+  (shared by its tabs), sent when it connects and when it asks; the server skips that browser's
+  connections when relaying its question. The id is never sent to other visitors. Someone using
+  a second browser or device, or who clears their storage, is a new visitor and will see them.
 - Question text is only ever inserted as plain text. WebSocket connections are limited to 20 a
   minute per IP.
 
