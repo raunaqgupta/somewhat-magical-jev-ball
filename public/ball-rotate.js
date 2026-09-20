@@ -1,11 +1,17 @@
-// Lets the ball be rotated with a mouse or a finger. While it is held, the answer
-// window follows the pointer around the sphere; when it is let go the ball
-// rotates back to rest, starting fast and slowing down. Works whether or not the
-// 3D sphere loaded, since only the window moves.
+// Lets the ball be rotated with a mouse or a finger. While it is held, the two
+// windows (the answer on the front, the model version on the back) follow the
+// pointer around the sphere; when it is let go the ball rotates back to rest,
+// starting fast and slowing down. Works whether or not the 3D sphere loaded,
+// since only the windows move.
 import { dragPose, RETURN_MS, returnPose, windowPlacement, windowTransform } from "./ball-math.js";
 
 const ball = document.getElementById("ball");
-const windowEl = ball?.querySelector(".window");
+const faces = ball
+  ? [
+      { face: "front", el: ball.querySelector(".window-front") },
+      { face: "back", el: ball.querySelector(".window-back") },
+    ]
+  : [];
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const REST = { rotX: 0, rotY: 0 };
@@ -14,16 +20,20 @@ let drag = null;
 let frame = 0;
 
 function render() {
-  const placement = windowPlacement(pose.rotY, pose.rotX);
-  windowEl.style.transform = windowTransform(placement);
-  windowEl.style.opacity = String(placement.opacity);
+  for (const { face, el } of faces) {
+    const placement = windowPlacement(pose.rotY, pose.rotX, face);
+    el.style.transform = windowTransform(placement);
+    el.style.opacity = String(placement.opacity);
+  }
 }
 
-// Back to the plain CSS look, which is exactly the design.
+// Back to the plain CSS look, which is exactly the design: front showing, back hidden.
 function rest() {
   pose = REST;
-  windowEl.style.transform = "";
-  windowEl.style.opacity = "";
+  for (const { el } of faces) {
+    el.style.transform = "";
+    el.style.opacity = "";
+  }
 }
 
 function rotateBack() {
@@ -48,7 +58,7 @@ function release(event) {
   rotateBack();
 }
 
-if (ball && windowEl) {
+if (ball && faces.every(({ el }) => el)) {
   ball.addEventListener("pointerdown", (event) => {
     // Left mouse button, touch or pen only; and one pointer at a time.
     if (drag || (event.pointerType === "mouse" && event.button !== 0)) return;

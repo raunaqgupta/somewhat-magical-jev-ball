@@ -38,11 +38,14 @@ three, regenerate it with `npm run vendor:three`.
 
 ## Rotating the ball
 
-Drag the ball with a mouse or a finger to rotate it. The answer window follows the pointer around
-the sphere (turning, squashing and fading as it goes behind), and when you let go the ball rotates
-back to rest over 800ms, fast at first and slowing down (ease-out cubic). Catching it mid-return
-picks it up again. With `prefers-reduced-motion` it snaps back instead. The geometry is in
-`public/ball-math.js` and the pointer handling in `public/ball-rotate.js`.
+The ball has a front and a back (Paper designs "front" and the ball's back). The front is the dark
+window with the answer; the back is a white window reading `jev 1.13`, the model version.
+
+Drag the ball with a mouse or a finger to rotate it. Both windows follow the pointer around the
+sphere (turning, squashing and fading as they go behind), so half a turn shows the back. When you
+let go the ball rotates back to rest over 800ms, fast at first and slowing down (ease-out cubic).
+Catching it mid-return picks it up again. With `prefers-reduced-motion` it snaps back instead. The
+geometry is in `public/ball-math.js` and the pointer handling in `public/ball-rotate.js`.
 
 ## The live background
 
