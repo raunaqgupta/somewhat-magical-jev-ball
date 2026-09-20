@@ -227,3 +227,45 @@ test("a pose written as its negative is the same orientation and returns the sam
     near(a.dy, b.dy, 1e-9);
   }
 });
+
+test("text is upright at rest, and upright when the ball is turned sideways to show the back", () => {
+  near(windowPlacement(REST_POSE, "front").roll, 0);
+  const turned = dragPose(REST_POSE, HALF_TURN, 0);
+  near(windowPlacement(turned, "back").roll, 0, 1e-9);
+});
+
+test("text is upside down when the ball is flipped over the top or the bottom", () => {
+  for (const sign of [1, -1]) {
+    const flipped = dragPose(REST_POSE, 0, sign * HALF_TURN);
+    near(Math.abs(windowPlacement(flipped, "back").roll), Math.PI, 1e-9);
+  }
+});
+
+test("text turns with the ball: a quarter flip over the top rolls it a quarter, and the front too", () => {
+  // Bring the front back to face the viewer after a full flip over the top and half a turn sideways.
+  const q = dragPose(dragPose(REST_POSE, 0, HALF_TURN), HALF_TURN, 0);
+  near(Math.abs(windowPlacement(q, "front").roll), Math.PI, 1e-9);
+
+  // Tipped part-way, the text is tipped part-way by the same amount and the same way.
+  const tipped = dragPose(REST_POSE, RADIUS * 0.6, RADIUS * 0.8);
+  const { roll } = windowPlacement(tipped, "front");
+  assert.ok(Math.abs(roll) > 0.05 && Math.abs(roll) < Math.PI / 2, `roll ${roll}`);
+  const mirrored = dragPose(REST_POSE, -RADIUS * 0.6, RADIUS * 0.8);
+  near(windowPlacement(mirrored, "front").roll, -roll, 1e-9);
+});
+
+test("roll is always a proper angle, never more than half a turn either way", () => {
+  for (const q of poses()) {
+    for (const face of ["front", "back"]) {
+      const { roll } = windowPlacement(q, face);
+      assert.ok(roll >= -Math.PI - 1e-12 && roll <= Math.PI + 1e-12, `roll ${roll}`);
+    }
+  }
+});
+
+test("windowTransform turns the window in its own plane last, by the roll", () => {
+  const placement = { dx: 0, dy: 0, angle: 0, scale: 1, roll: Math.PI };
+  assert.match(windowTransform(placement), /rotate\(3\.1416rad\)$/);
+  // With no roll given it is a quarter of nothing, and the window is as before.
+  assert.match(windowTransform({ dx: 1, dy: 2, angle: 0, scale: 1 }), /rotate\(0\.0000rad\)$/);
+});

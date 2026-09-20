@@ -2,11 +2,15 @@
 // by `npm run vendor:three` so the page needs no CDN and ships a small file.
 export {
   AmbientLight,
+  CanvasTexture,
   DirectionalLight,
+  Group,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   OrthographicCamera,
   Scene,
   SphereGeometry,
+  SRGBColorSpace,
   WebGLRenderer,
 } from "three";

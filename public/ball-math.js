@@ -61,12 +61,15 @@ export const rotationAngle = (q) => 2 * Math.atan2(Math.hypot(q.x, q.y, q.z), Ma
  * Returns offsets in CSS pixels from the window's resting position (the centre of
  * the ball, for both faces), plus the foreshortening: squash the window by
  * `scale` along the direction `angle` (CSS space), and fade it out as it turns
- * away from the viewer. A face is only visible while it is on the near side. The
- * window itself stays upright so its text is always readable.
+ * away from the viewer. A face is only visible while it is on the near side.
+ * `roll` turns the window in its own plane with the ball, so its text goes
+ * upside down when the ball is flipped over, as a label on a real ball would.
  */
 export function windowPlacement(q, face = "front") {
   // The centre of the window on the unit sphere at rest: (0, 0, side).
   const { x, y, z } = rotate(q, { x: 0, y: 0, z: face === "back" ? -1 : 1 });
+  // Text on either face reads upright when the ball's own "up" points up the screen.
+  const up = rotate(q, { x: 0, y: 1, z: 0 });
 
   return {
     dx: x * RADIUS,
@@ -75,14 +78,17 @@ export function windowPlacement(q, face = "front") {
     // At rest the front is exactly the design's circle; it only ever squashes.
     scale: Math.min(1, Math.max(z, 0)),
     opacity: smoothstep(0.05, 0.3, z),
+    // Clockwise, as CSS measures it, from the screen's up to the ball's up.
+    roll: Math.atan2(up.x, up.y),
   };
 }
 
 /** CSS `transform` value for a placement from `windowPlacement`. */
-export function windowTransform({ dx, dy, angle, scale }) {
+export function windowTransform({ dx, dy, angle, scale, roll = 0 }) {
   return (
     `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) ` +
-    `rotate(${angle.toFixed(4)}rad) scaleX(${scale.toFixed(4)}) rotate(${(-angle).toFixed(4)}rad)`
+    `rotate(${angle.toFixed(4)}rad) scaleX(${scale.toFixed(4)}) rotate(${(-angle).toFixed(4)}rad) ` +
+    `rotate(${roll.toFixed(4)}rad)`
   );
 }
 

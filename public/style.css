@@ -144,6 +144,23 @@ body {
   background: transparent;
 }
 
+/* With the 3D model, both faces are drawn on the sphere. The answer stays in the page
+   for screen readers (and the model reads it), but is not drawn twice. */
+.ball.is-3d .window-front {
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  clip-path: inset(50%);
+}
+
+.ball.is-3d .window-back {
+  display: none;
+}
+
 @keyframes shake {
   10%, 90% { transform: translate(-2px, 1px) rotate(-1deg); }
   20%, 80% { transform: translate(4px, -2px) rotate(2deg); }
