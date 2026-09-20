@@ -60,7 +60,7 @@ function textureAxes(q, face) {
 
 test("the model is a sphere and its two faces, turned together, seen by an orthographic camera", () => {
   const { scene, camera, ball } = buildScene();
-  assert.deepEqual(scene.children.map((c) => c.type).sort(), ["DirectionalLight", "Group"]);
+  assert.deepEqual(scene.children.map((c) => c.type).sort(), ["AmbientLight", "Group"]);
   assert.deepEqual(ball.children.map((c) => c.type), ["Mesh", "Mesh", "Mesh"]);
   assert.equal(camera.type, "OrthographicCamera");
 });
@@ -72,20 +72,30 @@ test("there is exactly one light source in the scene, whatever kind it is", () =
     if (object.isLight) lights.push(object);
   });
   assert.equal(lights.length, 1);
-  assert.equal(lights[0].type, "DirectionalLight");
-  // No ambient or hemisphere fill, no lights hiding inside the ball, no environment map.
+  assert.equal(lights[0].type, "AmbientLight");
+  // No other fill, no lights hiding inside the ball, no environment map.
   assert.equal(scene.environment, null);
   assert.equal(scene.background, null);
 });
 
-test("the light is on the viewer's side and up and to the left, so a face turned to the viewer is lit", () => {
+test("the light is a white ambient light, strong enough to show a face in its own colours", () => {
   const { light } = buildScene();
-  const direction = light.position.clone().normalize();
-  assert.ok(direction.z > 0.5, "in front of the ball");
-  assert.ok(direction.y > 0, "above it");
-  assert.ok(direction.x < 0, "to its left");
-  // A face at rest, or a back turned to face the viewer, points at +z: lit head-on enough to read.
-  assert.ok(direction.z > 0.6, `a face turned to the viewer would be lit at only ${direction.z.toFixed(2)}`);
+  assert.equal(light.type, "AmbientLight");
+  assert.equal(light.color.getHex(), 0xffffff);
+  // three.js divides light on a diffuse surface by pi, so pi is the least that shows a face at its
+  // own colour; the glossy material gives up a little of it, so it is a touch more. Too much would
+  // wash the faces out, so it is held close to pi.
+  assert.ok(light.intensity >= Math.PI, `too dim: ${light.intensity}`);
+  assert.ok(light.intensity <= Math.PI * 1.2, `too bright: ${light.intensity}`);
+});
+
+test("an ambient light has no direction, so a face is lit the same whichever way the ball is turned", () => {
+  // Nothing in the scene depends on where the light is: it lights every surface evenly.
+  const { light } = buildScene();
+  assert.equal(light.isAmbientLight, true);
+  assert.equal(light.isDirectionalLight, undefined);
+  assert.equal(light.isPointLight, undefined);
+  assert.equal(light.isSpotLight, undefined);
 });
 
 test("the sphere and both faces are lit by it and share one glossy finish, and the faces carry their textures", () => {
@@ -234,8 +244,8 @@ test("a face is in the model on the side it should be: the front centre at rest,
 test("the vendored three.js bundle exports exactly what the ball imports", async () => {
   const vendored = await import("../public/vendor/three.js");
   assert.deepEqual(Object.keys(vendored).sort(), [
+    "AmbientLight",
     "CanvasTexture",
-    "DirectionalLight",
     "Group",
     "Mesh",
     "MeshPhysicalMaterial",

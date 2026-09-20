@@ -28,7 +28,7 @@ npm run deploy
 
 ## The 3D ball
 
-The ball is a glossy sphere rendered with [three.js](https://threejs.org) (`public/ball3d.js`).
+The ball is a sphere rendered with [three.js](https://threejs.org) (`public/ball3d.js`).
 The answer window stays a DOM element on top of the canvas so the text is real text, and the whole
 ball shakes with a CSS animation when you ask. If WebGL is unavailable the flat CSS ball is used instead.
 
@@ -42,7 +42,8 @@ The ball has a front and a back (Paper designs "front" and the ball's back). The
 window with the answer; the back is a white window reading `jev 1.13`, the model version.
 
 The ball is a 3D model (`public/ball3d.js`): a glossy sphere with both faces on it as part of the
-model, all lit by a single light (so the gloss catches the faces too), so they turn with it and **text goes upside down when the ball is flipped over**, as a label
+model, all lit by a single ambient light (so each face shows in its own colours from whichever way
+it is turned, with no shading or highlights), so they turn with it and **text goes upside down when the ball is flipped over**, as a label
 on a real ball would. The faces are drawn from the same measurements as the designs
 (`public/face-texture.js`). The answer stays real text in the page for screen readers, and the front
 face is redrawn from it whenever it changes.
