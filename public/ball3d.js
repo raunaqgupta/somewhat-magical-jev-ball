@@ -27,6 +27,10 @@ const FACE_RADIUS = WINDOW_SIZE / BALL_SIZE; // as a fraction of the ball's radi
 const SURFACE = 1.002;
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
+// The sphere's colour, the same as --ball in style.css: a very dark grey, because a black
+// ball would vanish against the black page. (The ambient light is set to show a surface
+// at its own colour, so this is the colour that appears.)
+export const BALL_COLOR = 0x1c1c1c;
 // three.js divides the light on a diffuse surface by pi, so an ambient light of
 // intensity pi would show a perfectly diffuse surface at its own colour. The glossy
 // material gives up a share of that to its specular layer (measured: a white face
@@ -69,7 +73,7 @@ export function buildScene({ frontMap = null, backMap = null } = {}) {
 
   // The sphere and both faces are lit by the same light and share one finish.
   const finish = { roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.1 };
-  const sphere = new Mesh(new SphereGeometry(1, 96, 64), new MeshPhysicalMaterial({ color: 0x030303, ...finish }));
+  const sphere = new Mesh(new SphereGeometry(1, 96, 64), new MeshPhysicalMaterial({ color: BALL_COLOR, ...finish }));
   const front = new Mesh(faceGeometry(1), new MeshPhysicalMaterial({ map: frontMap, ...finish }));
   const back = new Mesh(faceGeometry(-1), new MeshPhysicalMaterial({ map: backMap, ...finish }));
 
