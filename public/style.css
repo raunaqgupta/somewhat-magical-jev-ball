@@ -1,8 +1,19 @@
 :root {
-  --bg: #ffffff;
-  --ink: #000000;
-  --border: #ededed;
-  --muted: #666666;
+  /* The page is black. */
+  --page: #000000;
+  --text: #ffffff;
+  --line: #2b2b2b; /* borders on the page: the question box and the drifting blurbs */
+  --line-focus: #ffffff;
+  --muted: #9a9a9a; /* placeholder and error text */
+
+  /* The ball keeps its own colours whatever the page is. A black ball would vanish on a
+     black page, so it is a very dark grey; the 3D sphere uses the same (BALL_COLOR in
+     ball3d.js). Its windows are as in the design. */
+  --ball: #1c1c1c;
+  --ball-rim: #5a5a5a; /* a fine edge, about 3:1 against the page, so the ball reads as a shape */
+  --window-front: #000000;
+  --window-back: #ffffff;
+  --model-text: #000000;
   --window-text: #aaaaaa;
   --window-glow: #5b5b5b42;
   --font: system-ui, sans-serif;
@@ -18,9 +29,15 @@ body {
   margin: 0;
 }
 
+html {
+  background: var(--page);
+  /* Dark form controls, scrollbars and autofill to match. */
+  color-scheme: dark;
+}
+
 body {
-  background: var(--bg);
-  color: var(--ink);
+  background: var(--page);
+  color: var(--text);
   font-family: var(--font);
 }
 
@@ -36,7 +53,7 @@ body {
   position: absolute;
   max-width: 260px;
   padding: 8px;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--line);
   border-radius: 9999px;
   color: var(--window-text);
   font-family: var(--font);
@@ -65,7 +82,8 @@ body {
   width: 273px;
   height: 273px;
   border-radius: 50%;
-  background: var(--ink);
+  background: var(--ball);
+  box-shadow: 0 0 0 1px var(--ball-rim);
   overflow: clip;
   /* Drag to rotate: keep the browser from scrolling, zooming or selecting instead. */
   cursor: grab;
@@ -94,19 +112,19 @@ body {
 }
 
 .window-front {
-  background: var(--ink);
-  border: 1px solid var(--ink);
+  background: var(--window-front);
+  border: 1px solid var(--window-front);
   box-shadow: var(--window-glow) 0 2px 37px 16px inset;
 }
 
 .window-back {
-  background: var(--bg);
+  background: var(--window-back);
   opacity: 0;
 }
 
 .model {
   margin: 0;
-  color: var(--ink);
+  color: var(--model-text);
   font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   font-size: 14px;
   line-height: 18px;
@@ -180,14 +198,14 @@ body {
   /* 10 + 19 + 10 + the 1px borders is the design's 41px. The text needs the 19px: at
      15px a line is about 18px tall, and any less cuts the tails off g, y, p, q and j. */
   padding: 10px 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--page);
+  border: 1px solid var(--line);
   border-radius: 6px;
   overflow: clip;
 }
 
 .ask:focus-within {
-  border-color: var(--ink);
+  border-color: var(--line-focus);
 }
 
 .ask input {
@@ -196,7 +214,7 @@ body {
   border: 0;
   outline: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--text);
   padding: 0;
   font: inherit;
   font-size: 15px;
@@ -218,7 +236,7 @@ body {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--text);
   cursor: pointer;
 }
 
@@ -228,7 +246,7 @@ body {
 }
 
 .ask button:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--text);
   outline-offset: 2px;
   border-radius: 4px;
 }
