@@ -41,13 +41,21 @@ three, regenerate it with `npm run vendor:three`.
 The ball has a front and a back (Paper designs "front" and the ball's back). The front is the dark
 window with the answer; the back is a white window reading `jev 1.13`, the model version.
 
+The ball is a 3D model (`public/ball3d.js`): a glossy sphere with both faces on it as part of the
+model, so they turn with it and **text goes upside down when the ball is flipped over**, as a label
+on a real ball would. The faces are drawn from the same measurements as the designs
+(`public/face-texture.js`). The answer stays real text in the page for screen readers, and the front
+face is redrawn from it whenever it changes.
+
 Drag the ball with a mouse or a finger to rotate it, in any direction: it turns like a trackball, so
-the surface follows the pointer from whatever orientation it is in. Both windows follow it around
-the sphere (turning, squashing and fading as they go behind), so half a turn in any direction shows
-the back, which stays upright so it can be read. When you let go the ball rotates back to rest over
-800ms about a single axis by the short way, fast at first and slowing down (ease-out cubic).
-Catching it mid-return picks it up again. With `prefers-reduced-motion` it snaps back instead. The
-geometry is in `public/ball-math.js` and the pointer handling in `public/ball-rotate.js`.
+the surface follows the pointer from whatever orientation it is in, and half a turn in any direction
+shows the back. When you let go the ball rotates back to rest over 800ms about a single axis by the
+short way, fast at first and slowing down (ease-out cubic). Catching it mid-return picks it up
+again. With `prefers-reduced-motion` it snaps back instead.
+
+If WebGL is unavailable the flat ball is used, and its two windows are moved and turned around it
+with the same geometry (`public/ball-math.js`), so the text still flips. Pointer handling is in
+`public/ball-rotate.js`.
 
 ## The live background
 

@@ -12,12 +12,6 @@ const DEFAULT_TEXT = answer.textContent;
 const SHAKE_MS = 600;
 const CLOUDED = "The ball is clouded. Try again.";
 
-// The 3D sphere is an enhancement: if the module or WebGL is unavailable the
-// flat CSS ball stays. Either way the whole ball shakes with the CSS animation.
-import("./ball3d.js")
-  .then((module) => module.createBall(ball))
-  .catch(() => {});
-
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function ask(question) {

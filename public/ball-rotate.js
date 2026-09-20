@@ -1,8 +1,11 @@
-// Lets the ball be rotated with a mouse or a finger. While it is held, the two
-// windows (the answer on the front, the model version on the back) follow the
-// pointer around the sphere; when it is let go the ball rotates back to rest,
-// starting fast and slowing down. Works whether or not the 3D sphere loaded,
-// since only the windows move.
+// Lets the ball be rotated with a mouse or a finger. While it is held, the ball
+// turns with the pointer, like a trackball; when it is let go the ball rotates
+// back to rest, starting fast and slowing down.
+//
+// The ball is drawn as a 3D model (ball3d.js) with both faces on it. If WebGL is
+// unavailable, the two windows (the answer on the front, the model version on the
+// back) are moved around the flat ball instead, with the same geometry, so the
+// text still turns upside down when the ball is flipped over.
 import {
   dragPose,
   REST_POSE,
@@ -13,6 +16,7 @@ import {
 } from "./ball-math.js";
 
 const ball = document.getElementById("ball");
+const answerEl = document.getElementById("answer");
 const faces = ball
   ? [
       { face: "front", el: ball.querySelector(".window-front") },
@@ -24,8 +28,10 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 let pose = REST_POSE;
 let drag = null;
 let frame = 0;
+let model = null; // the 3D model, once it has loaded
 
-function render() {
+// The flat fallback: place each window on the ball.
+function renderWindows() {
   for (const { face, el } of faces) {
     const placement = windowPlacement(pose, face);
     el.style.transform = windowTransform(placement);
@@ -34,12 +40,22 @@ function render() {
 }
 
 // Back to the plain CSS look, which is exactly the design: front showing, back hidden.
-function rest() {
-  pose = REST_POSE;
+function clearWindows() {
   for (const { el } of faces) {
     el.style.transform = "";
     el.style.opacity = "";
   }
+}
+
+function render() {
+  if (model) model.setPose(pose);
+  else renderWindows();
+}
+
+function rest() {
+  pose = REST_POSE;
+  if (model) model.setPose(pose);
+  else clearWindows();
 }
 
 function rotateBack() {
@@ -64,7 +80,7 @@ function release(event) {
   rotateBack();
 }
 
-if (ball && faces.every(({ el }) => el)) {
+if (ball && answerEl && faces.every(({ el }) => el)) {
   ball.addEventListener("pointerdown", (event) => {
     // Left mouse button, touch or pen only; and one pointer at a time.
     if (drag || (event.pointerType === "mouse" && event.button !== 0)) return;
@@ -85,4 +101,19 @@ if (ball && faces.every(({ el }) => el)) {
 
   ball.addEventListener("pointerup", release);
   ball.addEventListener("pointercancel", release);
+
+  // The 3D model is an enhancement: if the module or WebGL is unavailable, or the
+  // graphics context is lost later, the flat ball and its windows are used.
+  import("./ball3d.js")
+    .then((module) => {
+      model = module.createBall(ball, answerEl, () => {
+        model = null;
+        render();
+      });
+      if (model) {
+        clearWindows();
+        model.setPose(pose);
+      }
+    })
+    .catch(() => {});
 }
