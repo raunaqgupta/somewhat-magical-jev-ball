@@ -138,3 +138,48 @@ test("a ball let go past half a turn returns the short way round", () => {
   near(before.dx, after.dx, 1e-9);
   near(before.opacity, after.opacity, 1e-9);
 });
+
+test("at rest the back is on the far side, hidden, and half a turn brings it to the front", () => {
+  const rest = windowPlacement(0, 0, "back");
+  assert.equal(rest.opacity, 0);
+  assert.equal(rest.scale, 0);
+
+  const turned = windowPlacement(Math.PI, 0, "back");
+  near(turned.dx, 0, 1e-9);
+  near(turned.dy, 0, 1e-9);
+  near(turned.scale, 1);
+  near(turned.opacity, 1);
+
+  // ...and the front has gone round to the far side.
+  assert.equal(windowPlacement(Math.PI, 0, "front").opacity, 0);
+});
+
+test("the two faces are opposite sides of the ball: never both showing, and mirrored", () => {
+  for (let y = -Math.PI; y <= Math.PI; y += 0.1) {
+    for (let x = -MAX_TILT; x <= MAX_TILT; x += 0.1) {
+      const front = windowPlacement(y, x, "front");
+      const back = windowPlacement(y, x, "back");
+      assert.ok(front.scale === 0 || back.scale === 0, `both visible at ${y}, ${x}`);
+      near(back.dx, -front.dx, 1e-9);
+      near(back.dy, -front.dy, 1e-9);
+    }
+  }
+});
+
+test("turning the ball sideways slides the front off and the back on from the other side", () => {
+  // Turned a little to the right, the front has moved right and the back (behind) left.
+  assert.ok(windowPlacement(0.5, 0, "front").dx > 0);
+  assert.ok(windowPlacement(0.5, 0, "back").dx < 0);
+  // Turned three quarters of the way round, the back is visible again on the near side.
+  const back = windowPlacement(Math.PI * 0.75, 0, "back");
+  assert.ok(back.opacity > 0 && back.scale > 0);
+  assert.ok(windowPlacement(Math.PI * 0.75, 0, "front").opacity === 0);
+});
+
+test("the back only ever squashes and fades too", () => {
+  for (let y = -Math.PI; y <= Math.PI; y += 0.1) {
+    const p = windowPlacement(y, 0.3, "back");
+    assert.ok(p.scale >= 0 && p.scale <= 1);
+    assert.ok(p.opacity >= 0 && p.opacity <= 1);
+  }
+});

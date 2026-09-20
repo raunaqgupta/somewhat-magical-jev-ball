@@ -2,23 +2,19 @@
 // they can be tested in Node.
 //
 // The ball is a unit sphere seen head-on (orthographic, looking down -z with
-// +x right and +y up). Its only visible feature is the answer window, a disc on
-// the surface that at rest sits where the Paper design puts it: 44px above the
-// ball's centre. A pose is the ball's rotation about the y axis (`rotY`, from
+// +x right and +y up). Its only visible features are two windows, discs on the
+// surface: the front, with the answer, at rest facing the viewer at the ball's
+// centre as in the Paper design; and the back, with the model version, on the
+// opposite side. A pose is the ball's rotation about the y axis (`rotY`, from
 // dragging sideways) and the x axis (`rotX`, from dragging up or down), in radians.
 
 export const BALL_SIZE = 273;
-export const WINDOW_OFFSET_Y = 44;
 // How far the ball can be tipped up or down; past this the window would just spin over the pole.
 export const MAX_TILT = 1.4;
 // How long the ball takes to rotate back to rest after it is let go.
 export const RETURN_MS = 800;
 
 const RADIUS = BALL_SIZE / 2;
-const REST = (() => {
-  const y = WINDOW_OFFSET_Y / RADIUS;
-  return { y, z: Math.sqrt(1 - y * y) };
-})();
 
 const smoothstep = (edge0, edge1, x) => {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
@@ -26,30 +22,33 @@ const smoothstep = (edge0, edge1, x) => {
 };
 
 /**
- * Where the window is, and how it looks, once the ball is rotated about the
- * x axis by `rotX` and then the y axis by `rotY` (radians).
+ * Where a window is, and how it looks, once the ball is rotated about the x axis
+ * by `rotX` and then the y axis by `rotY` (radians). `face` is "front" or "back".
  *
- * Returns offsets in CSS pixels from the resting position, plus the
- * foreshortening: squash the window by `scale` along the direction `angle`
- * (CSS space), and fade it out as it turns away from the viewer.
+ * Returns offsets in CSS pixels from the window's resting position (the centre of
+ * the ball, for both faces), plus the foreshortening: squash the window by
+ * `scale` along the direction `angle` (CSS space), and fade it out as it turns
+ * away from the viewer. A face is only visible while it is on the near side.
  */
-export function windowPlacement(rotY = 0, rotX = 0) {
+export function windowPlacement(rotY = 0, rotX = 0, face = "front") {
+  // The centre of the window on the unit sphere before rotating: (0, 0, side).
+  const side = face === "back" ? -1 : 1;
   const cx = Math.cos(rotX);
   const sx = Math.sin(rotX);
   const cy = Math.cos(rotY);
   const sy = Math.sin(rotY);
 
-  const y = REST.y * cx - REST.z * sx;
-  const zAfterX = REST.y * sx + REST.z * cx;
+  const y = -side * sx;
+  const zAfterX = side * cx;
   const x = zAfterX * sy;
   const z = zAfterX * cy;
 
   return {
     dx: x * RADIUS,
-    dy: -(y - REST.y) * RADIUS,
+    dy: -y * RADIUS,
     angle: Math.atan2(-y, x),
-    // Normalised so the resting window is exactly the design's circle.
-    scale: Math.min(1, Math.max(z, 0) / REST.z),
+    // At rest the front is exactly the design's circle; it only ever squashes.
+    scale: Math.min(1, Math.max(z, 0)),
     opacity: smoothstep(0.05, 0.3, z),
   };
 }

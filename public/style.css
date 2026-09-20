@@ -4,7 +4,7 @@
   --border: #ededed;
   --muted: #666666;
   --window-text: #aaaaaa;
-  --window-glow: #4747474a;
+  --window-glow: #5b5b5b42;
   --font: system-ui, sans-serif;
 }
 
@@ -78,19 +78,38 @@ body {
   cursor: grabbing;
 }
 
+/* Both faces are centred on the ball. The front is at rest facing the viewer; the
+   back is on the far side and hidden until the ball is rotated (see ball-rotate.js). */
 .window {
-  will-change: transform;
   position: absolute;
-  top: 18px;
+  top: 62px;
   left: 62px;
   width: 149px;
   height: 149px;
   border-radius: 50%;
-  background: var(--ink);
-  box-shadow: var(--window-glow) 0 2px 112px 58px inset;
   display: grid;
   place-items: center;
   overflow: clip;
+  will-change: transform;
+}
+
+.window-front {
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  box-shadow: var(--window-glow) 0 2px 37px 16px inset;
+}
+
+.window-back {
+  background: var(--bg);
+  opacity: 0;
+}
+
+.model {
+  margin: 0;
+  color: var(--ink);
+  font-family: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  line-height: 18px;
 }
 
 .answer {
