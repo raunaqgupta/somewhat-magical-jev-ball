@@ -34,31 +34,29 @@ test("the header comes first in the page, before the ball", () => {
   assert.ok(html.indexOf('class="site-header"') < html.indexOf('class="stage"'));
 });
 
-test("the header is plain text centred at the top of the page, not a tab on the edge", () => {
+test("the header is the title cell of the page's grid, not a tab on the edge", () => {
   const header = rule(".site-header");
   assert.doesNotMatch(header, /position:\s*absolute/, "it takes its place in the page");
-  assert.doesNotMatch(header, /(?:^|[\s;])(?:top|left):/m);
-  assert.doesNotMatch(header, /border/);
-  assert.doesNotMatch(css, /--header-line/);
-  // The page is a column with the header at the top, centred across it.
+  assert.match(header, /grid-area:\s*2 \/ 2/, "the middle column, below the empty row above it");
+  // The page is a grid, and the title is centred in its cell.
   const body = rule("body");
-  assert.match(body, /display:\s*flex/);
-  assert.match(body, /flex-direction:\s*column/);
-  assert.match(body, /align-items:\s*center/);
-  assert.match(body, /justify-content:\s*space-between/);
+  assert.match(body, /display:\s*grid/);
+  // (the three cells share a rule, which the last of them, .ask-cell, stands for)
+  assert.match(rule(".ask-cell"), /align-items:\s*center/);
+  assert.match(rule(".ask-cell"), /justify-content:\s*center/);
 });
 
-test("the title is 14px Yellowtail on a 15px line, falling back to the system font", () => {
+test("the title is 24px Ballet on a 30px line, falling back to the system font", () => {
   const title = rule(".site-title");
-  assert.match(title, /font:\s*400 14px\/15px "Yellowtail", system-ui, sans-serif/);
-  assert.equal(px(title, "height"), 15);
-  assert.match(title, /white-space:\s*pre/);
+  assert.match(title, /font:\s*400 24px\/30px "Ballet", system-ui, sans-serif/);
+  assert.match(title, /color:\s*var\(--title\)/);
+  assert.match(css, /--title:\s*#696969/i);
 });
 
-test("Yellowtail is served from this site, as a real WOFF2 file, preloaded", () => {
+test("Ballet is served from this site, as a real WOFF2 file, preloaded", () => {
   const face = /@font-face\s*\{([^}]*)\}/.exec(css);
   assert.ok(face, "an @font-face");
-  assert.match(face[1], /font-family:\s*"Yellowtail"/);
+  assert.match(face[1], /font-family:\s*"Ballet"/);
   assert.match(face[1], /font-display:\s*swap/, "text is shown at once in the fallback, not hidden");
   const src = /src:\s*url\("(\/fonts\/[^"]+)"\)\s*format\("woff2"\)/.exec(face[1]);
   assert.ok(src, "a local woff2 src, not another site");
@@ -73,15 +71,11 @@ test("Yellowtail is served from this site, as a real WOFF2 file, preloaded", () 
   assert.ok(html.includes(`<link rel="preload" href="${src[1]}" as="font" type="font/woff2" crossorigin`), "preloaded, with crossorigin as fonts require");
 });
 
-test("the font's Apache 2.0 licence and copyright notice ship with it", () => {
+test("the font's SIL Open Font License and copyright notice ship with it", () => {
   const dir = new URL("../public/fonts/", import.meta.url);
-  assert.ok(existsSync(new URL("yellowtail-LICENSE.txt", dir)));
-  assert.ok(existsSync(new URL("yellowtail-NOTICE.txt", dir)));
-  const license = readFileSync(new URL("yellowtail-LICENSE.txt", dir), "utf8");
-  assert.match(license, /Apache License/);
-  assert.match(license, /Version 2\.0, January 2004/);
-  assert.ok(statSync(new URL("yellowtail-LICENSE.txt", dir)).size > 10_000, "the whole licence text");
-  const notice = readFileSync(new URL("yellowtail-NOTICE.txt", dir), "utf8");
-  assert.match(notice, /Copyright \(c\) 2011 by Brian J\. Bonislawsky DBA Astigmatic/);
-  assert.match(notice, /Apache License, Version 2\.0/);
+  assert.ok(existsSync(new URL("ballet-OFL.txt", dir)));
+  const license = readFileSync(new URL("ballet-OFL.txt", dir), "utf8");
+  assert.match(license, /Copyright 2020 The Ballet Project Authors/);
+  assert.match(license, /SIL OPEN FONT LICENSE Version 1\.1/);
+  assert.ok(statSync(new URL("ballet-OFL.txt", dir)).size > 4_000, "the whole licence text");
 });

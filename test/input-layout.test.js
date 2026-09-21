@@ -18,7 +18,7 @@ const px = (block, property) => {
   return Number(match[1]);
 };
 
-const DESIGN_HEIGHT = 41; // the Paper design's question box, borders included
+const DESIGN_HEIGHT = 44; // the Paper design's question box, borders included
 const BORDER = 1;
 
 test("the input's text box is taller than its font, so descenders are not cut off", () => {
@@ -33,7 +33,7 @@ test("the input's text box is taller than its font, so descenders are not cut of
   assert.ok(height >= lineHeight, `height ${height}px is shorter than the ${lineHeight}px line`);
 });
 
-test("the question box is still the design's 41px tall", () => {
+test("the question box is still the design's 44px tall", () => {
   const ask = rule(".ask");
   const padding = /padding:\s*([\d.]+)px\s+[\d.]+px/.exec(ask) ?? /padding:\s*([\d.]+)px\s*;/.exec(ask);
   assert.ok(padding, "no padding on .ask");
