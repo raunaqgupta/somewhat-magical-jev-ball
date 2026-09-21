@@ -24,22 +24,20 @@ const ms = (text, property) => {
   return Number(match[1]);
 };
 
-test("the ball is pushed back by shrinking it a little, and eases back out", () => {
+test("the ball is pushed back by shrinking it to 90%, and eases back out", () => {
   const ball = rule(".ball");
   assert.match(ball, /(?:^|[\s;])scale:\s*1\s*;/m, "resting at full size");
   assert.match(ball, /transition:\s*scale\s+\d+ms/, "eases back out");
 
   const pushed = rule(".ball.is-pushed");
-  const scale = Number(/scale:\s*([\d.]+)\s*;/.exec(pushed)?.[1]);
-  assert.ok(scale > 0.8 && scale < 0.97, `pushed to ${scale}: enough to see, not so much it looks broken`);
+  assert.equal(Number(/scale:\s*([\d.]+)\s*;/.exec(pushed)?.[1]), 0.9, "its deepest point is 90% size");
 });
 
-test("it takes about twice as long to go in as it once did, and comes back more slowly still", () => {
+test("it takes 300ms to reach its deepest point and 600ms to come back to full size", () => {
   const out = ms(rule(".ball"), "transition");
   const inn = ms(rule(".ball.is-pushed"), "transition-duration");
-  // It used to reach its deepest point in 120ms; now about double that.
-  assert.ok(inn >= 200 && inn <= 300, `${inn}ms in`);
-  assert.ok(out >= 300 && out <= 900, `${out}ms out`);
+  assert.equal(inn, 300, "time to the deepest point");
+  assert.equal(out, 600, "time back to full size");
   assert.ok(inn < out, "still quicker going in than coming back");
 });
 

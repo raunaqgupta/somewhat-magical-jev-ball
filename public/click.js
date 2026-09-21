@@ -27,7 +27,7 @@ export const PUSH_REST_MS = 20;
 
 /**
  * How long to keep the ball pushed, given the CSS `transition-duration` it is pushed with
- * (as `getComputedStyle` reports it: "0.24s", "240ms", or a list of them). The push has
+ * (as `getComputedStyle` reports it: "0.3s", "300ms", or a list of them). The push has
  * to last until the ball has got to its deepest point, or it would be let go part of the
  * way down, so this is that duration plus a short rest. With no transition (reduced
  * motion) there is nothing to wait for, only the rest.
