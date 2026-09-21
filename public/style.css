@@ -118,7 +118,7 @@ body {
   scale: 0.9;
   /* How long the ball takes to reach its deepest point. ball-rotate.js reads this, so the
      push is held until the ball has got there whatever it is set to. */
-  transition-duration: 300ms;
+  transition-duration: 100ms;
 }
 
 .ball.is-dragging {

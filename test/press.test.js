@@ -33,10 +33,10 @@ test("the ball is pushed back by shrinking it to 90%, and eases back out", () =>
   assert.equal(Number(/scale:\s*([\d.]+)\s*;/.exec(pushed)?.[1]), 0.9, "its deepest point is 90% size");
 });
 
-test("it takes 300ms to reach its deepest point and 600ms to come back to full size", () => {
+test("it takes 100ms to reach its deepest point and 600ms to come back to full size", () => {
   const out = ms(rule(".ball"), "transition");
   const inn = ms(rule(".ball.is-pushed"), "transition-duration");
-  assert.equal(inn, 300, "time to the deepest point");
+  assert.equal(inn, 100, "time to the deepest point");
   assert.equal(out, 600, "time back to full size");
   assert.ok(inn < out, "still quicker going in than coming back");
 });
