@@ -28,19 +28,30 @@ npm run deploy
 
 ## The layout
 
-The page follows the Paper designs for a desktop (1280px wide) and a phone (370px wide). The title
-"Somewhat Magical Jev Ball" is centred at the top in the Yellowtail script face
-(`<header class="site-header">` with the page's `<h1>`), and the ball and the question box sit together
-in the space below it, 42px apart, centred in it. The page has 42px of padding above and below and 24px
-at the sides; on a phone (600px wide or less) it is 42px all round, the ball is 230px instead of 273px,
-and the question box runs the full width instead of being 420px wide. The window in the ball is 149px on
-both. The ball's window is nearly flat dark grey (`#474747` at 29% over black, blurred so wide that it
-covers the window evenly), as in the design.
+The page follows the Paper designs for a desktop (1280px wide) and a phone (370px wide). On a
+desktop it is a CSS grid of three columns (`1fr 420px 1fr`) and five rows (`1fr 63px 346px 118px 1fr`).
+The title "Somewhat Magical Jev Ball" (`<header class="site-header">` with the page's `<h1>`), the ball
+and the question box are the three cells of the middle column, each with 36px of padding, and the empty
+outer rows and columns take up what is left, so the stack is centred on the page. Faint lines (`#f4f4f4`)
+run between the cells across the whole page, and the middle column's box is drawn in `#cccccc`. The cells
+draw these lines themselves (their top edges, run out to both sides, and the column's sides), so there
+are no extra elements for them.
 
-Yellowtail is served from this site (`public/fonts/`, the Latin subset as WOFF2, preloaded), not from
-Google Fonts, so the page makes no third-party request for it. It is licensed under the Apache License
-2.0, and its license and copyright notice ship alongside it. If the font cannot load, the title shows
-in the system font.
+On a phone (600px wide or less) it is the same grid with different sizes: the ball is 179px instead of
+273px, the cells have 16px at the sides, and the middle column is as wide as the title (about 300px)
+instead of 420px, with the empty columns taking the rest. The rows are `1fr 63px 252px 118px 1fr`; the
+title's row grows if the title has to wrap, which it only does on phones narrower than the title (about
+300px). The window in the ball is 149px on both. The ball's window is nearly flat dark grey (`#474747`
+at 29% over black, blurred so wide that it covers the window evenly), as in the design.
+
+The lines run out 100vw past their cells, so `html` and `body` are set so that the body clips them
+(`overflow-x: clip` only works on the body if the page's own overflow is not `visible`); otherwise the
+page would scroll sideways.
+
+The title's script face, Ballet, is served from this site (`public/fonts/`, the Latin subset as WOFF2,
+preloaded), not from Google Fonts, so the page makes no third-party request for it. It is licensed under
+the SIL Open Font License 1.1, and its license and copyright notice ship alongside it. If the font cannot
+load, the title shows in the system font.
 
 ## The 3D ball
 

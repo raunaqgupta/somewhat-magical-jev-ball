@@ -20,31 +20,63 @@ const rule = (source, selector) => {
 };
 const value = (block, property) => new RegExp(`(?:^|[\\s;])${property}:\\s*([^;]+);`, "m").exec(block)?.[1].trim();
 
-test("desktop: 42px above and below, 24px at the sides", () => {
-  assert.equal(value(rule(desktopCss, "body"), "padding"), "42px 24px");
+test("desktop: a grid of 1fr, 420px, 1fr columns and five rows, the middle three the design's heights", () => {
+  const body = rule(desktopCss, "body");
+  assert.equal(value(body, "display"), "grid");
+  assert.equal(value(body, "grid-template-columns"), "1fr 420px 1fr");
+  // The empty rows above and below take what is left, so the middle three are centred. The
+  // question box's row is 117px plus the 1px line under it.
+  assert.equal(value(body, "grid-template-rows"), "1fr 63px 346px 118px 1fr");
+  assert.equal(value(body, "padding"), undefined, "the cells have the padding, not the page");
 });
 
-test("phone: 42px all round", () => {
-  assert.equal(value(rule(phoneCss, "body"), "padding"), "42px");
+test("desktop: the title, ball and question box are the middle column's three cells", () => {
+  assert.equal(value(rule(desktopCss, ".site-header"), "grid-area"), "2 / 2");
+  assert.equal(value(rule(desktopCss, ".ball-cell"), "grid-area"), "3 / 2");
+  assert.equal(value(rule(desktopCss, ".ask-cell"), "grid-area"), "4 / 2");
+  // <main> takes no box of its own, so its children are cells of the body's grid.
+  assert.equal(value(rule(desktopCss, ".stage"), "display"), "contents");
+  assert.equal(value(rule(desktopCss, ".ball-cell"), "padding"), "36px");
+  assert.equal(value(rule(desktopCss, ".ask-cell"), "padding"), "36px");
+  assert.equal(value(rule(desktopCss, ".site-header"), "padding"), "16px 36px");
 });
 
-test("the ball and the question box sit 42px apart, centred in the space below the title", () => {
-  const stage = rule(desktopCss, ".stage");
-  assert.equal(value(stage, "gap"), "42px");
-  assert.equal(value(stage, "flex"), "1");
-  assert.equal(value(stage, "justify-content"), "center");
-  assert.equal(value(stage, "align-items"), "center");
-  // The body's padding is the page's padding: the stage adds none of its own.
-  assert.equal(value(stage, "padding"), undefined);
+test("desktop: the lines are #f4f4f4 across the page and #cccccc round the middle column's box", () => {
+  assert.match(css, /--line:\s*#f4f4f4/i);
+  assert.match(css, /--frame:\s*#cccccc/i);
+  assert.match(rule(desktopCss, "body::before"), /border-inline:\s*1px solid var\(--line\)/);
+  // The three cells share this rule, which the last of them, .ask-cell, stands for.
+  assert.match(rule(desktopCss, ".ask-cell"), /border:\s*solid var\(--frame\)/);
 });
 
-test("the ball is 273px on a desktop and 230px on a phone", () => {
+test("phone: the same grid, with the middle column as wide as the title and the design's row heights", () => {
+  const body = rule(phoneCss, "body");
+  assert.equal(value(body, "grid-template-columns"), "1fr minmax(0, max-content) 1fr");
+  // The title's row can grow if the title has to wrap on a very narrow phone.
+  assert.equal(value(body, "grid-template-rows"), "1fr minmax(63px, auto) 252px 118px 1fr");
+  assert.equal(value(body, "padding"), undefined, "the cells have the padding, not the page");
+  // The cells and the lines are the desktop's: the phone does not move or hide them.
+  assert.doesNotMatch(phoneCss, /grid-area|display:\s*none|border/);
+  assert.equal(value(rule(phoneCss, ".site-header"), "padding"), "16px");
+  // The ball's and the question box's cells share a rule, which the last of them stands for.
+  assert.match(phoneCss, /\.ball-cell,\s*\.ask-cell\s*\{/);
+  assert.equal(value(rule(phoneCss, ".ask-cell"), "padding"), "36px 16px");
+});
+
+test("the lines run out past their cells without making the page scroll sideways", () => {
+  // The body's overflow is only its own if the page's is set (not left visible): otherwise it is passed
+  // up to the page, which then scrolls to the far end of the lines.
+  assert.equal(value(rule(desktopCss, "html"), "overflow"), "auto");
+  assert.equal(value(rule(desktopCss, "body"), "overflow-x"), "clip");
+});
+
+test("the ball is 273px on a desktop and 179px on a phone", () => {
   const desktop = rule(desktopCss, ".ball");
   assert.equal(value(desktop, "width"), "273px");
   assert.equal(value(desktop, "height"), "273px");
   const phone = rule(phoneCss, ".ball");
-  assert.equal(value(phone, "width"), "230px");
-  assert.equal(value(phone, "height"), "230px");
+  assert.equal(value(phone, "width"), "179px");
+  assert.equal(value(phone, "height"), "179px");
 });
 
 test("the window is 149px on both, and centred in the ball whatever its size", () => {
@@ -61,9 +93,8 @@ test("the window's shadow is the design's: #474747 at 0x4A, inset 0 2px 112px 58
   assert.equal(value(rule(css, ".window-front"), "box-shadow"), "var(--window-glow) 0 2px 112px 58px inset");
 });
 
-test("the question box is 420px wide on a desktop and the full width on a phone", () => {
-  const desktop = rule(desktopCss, ".ask-wrap");
-  assert.equal(value(desktop, "width"), "420px");
-  assert.equal(value(desktop, "max-width"), "100%");
-  assert.equal(value(rule(phoneCss, ".ask-wrap"), "width"), "100%");
+test("the question box fills its cell: 348px on a desktop and the full width on a phone", () => {
+  assert.equal(value(rule(desktopCss, ".ask-wrap"), "width"), "100%");
+  // 420px column, less the two 1px lines and 36px of padding each side.
+  assert.equal(420 - 2 - 2 * 36, 346);
 });
