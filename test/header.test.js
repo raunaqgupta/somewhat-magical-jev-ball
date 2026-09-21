@@ -19,7 +19,7 @@ const px = (block, property) => {
   return Number(match[1]);
 };
 
-const TITLE = "Magic Jev Ball";
+const TITLE = "Somewhat Magical Jev Ball";
 
 test("the page has one header with the page's name as its heading", () => {
   assert.equal((html.match(/<h1[\s>]/g) ?? []).length, 1, "exactly one h1");
@@ -34,18 +34,18 @@ test("the header comes first in the page, before the ball", () => {
   assert.ok(html.indexOf('class="site-header"') < html.indexOf('class="stage"'));
 });
 
-test("the header is the design's tab hanging from the left edge", () => {
+test("the header is plain text centred at the top of the page, not a tab on the edge", () => {
   const header = rule(".site-header");
-  assert.match(header, /position:\s*absolute/);
-  assert.equal(px(header, "top"), 24);
-  assert.match(header, /(?:^|[\s;])left:\s*0\s*;/m);
-  // 8px above and below, 16px on the right, 12px on the left.
-  assert.match(header, /padding:\s*8px 16px 8px 12px/);
-  // A 1px #E3E3E3 border on the top, right and bottom only, and square on the left.
-  assert.match(header, /border:\s*1px solid var\(--header-line\)/);
-  assert.match(header, /border-left:\s*0/);
-  assert.match(header, /border-radius:\s*0 99px 99px 0/);
-  assert.match(css.slice(0, css.indexOf("}")), /--header-line:\s*#e3e3e3/i);
+  assert.doesNotMatch(header, /position:\s*absolute/, "it takes its place in the page");
+  assert.doesNotMatch(header, /(?:^|[\s;])(?:top|left):/m);
+  assert.doesNotMatch(header, /border/);
+  assert.doesNotMatch(css, /--header-line/);
+  // The page is a column with the header at the top, centred across it.
+  const body = rule("body");
+  assert.match(body, /display:\s*flex/);
+  assert.match(body, /flex-direction:\s*column/);
+  assert.match(body, /align-items:\s*center/);
+  assert.match(body, /justify-content:\s*space-between/);
 });
 
 test("the title is 14px Yellowtail on a 15px line, falling back to the system font", () => {
@@ -53,17 +53,6 @@ test("the title is 14px Yellowtail on a 15px line, falling back to the system fo
   assert.match(title, /font:\s*400 14px\/15px "Yellowtail", system-ui, sans-serif/);
   assert.equal(px(title, "height"), 15);
   assert.match(title, /white-space:\s*pre/);
-});
-
-test("the stage clears the header on a small screen without moving the ball off centre", () => {
-  const stage = rule(".stage");
-  const padding = /padding:\s*([\d.]+)px\s+[\d.]+px/.exec(stage);
-  assert.ok(padding, "vertical padding on .stage");
-  const headerBottom = px(rule(".site-header"), "top") + 33; // 24px down, 33px tall in the design
-  assert.ok(Number(padding[1]) >= headerBottom, `padding ${padding[1]}px is less than the header's ${headerBottom}px`);
-  // Equal top and bottom, so the group stays centred.
-  assert.match(stage, /padding:\s*([\d.]+)px\s+[\d.]+px\s*;/);
-  assert.doesNotMatch(stage, /padding:\s*[\d.]+px\s+[\d.]+px\s+[\d.]+px/);
 });
 
 test("Yellowtail is served from this site, as a real WOFF2 file, preloaded", () => {

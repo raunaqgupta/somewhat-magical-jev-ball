@@ -2,10 +2,9 @@
   --bg: #ffffff;
   --ink: #000000;
   --border: #ededed;
-  --header-line: #e3e3e3;
   --muted: #666666;
   --window-text: #aaaaaa;
-  --window-glow: #5b5b5b42;
+  --window-glow: #4747474a;
   --font: system-ui, sans-serif;
 }
 
@@ -25,29 +24,30 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html {
   height: 100%;
-  margin: 0;
 }
 
+/* The page, as in the Paper design: the title at the top and the ball and question box
+   in the space that is left, centred in it. */
 body {
+  min-height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 42px 24px;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
 }
 
-/* The header: a tab hanging from the left edge, as in the Paper design. */
+/* The title, centred at the top. */
 .site-header {
-  position: absolute;
+  position: relative;
   z-index: 1;
-  top: 24px;
-  left: 0;
-  padding: 8px 16px 8px 12px;
-  background: var(--bg);
-  border: 1px solid var(--header-line);
-  border-left: 0;
-  border-radius: 0 99px 99px 0;
+  flex-shrink: 0;
 }
 
 .site-title {
@@ -83,15 +83,13 @@ body {
 
 .stage {
   position: relative;
-  min-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 55px;
-  /* Top and bottom are equal so the ball stays exactly centred, and the top clears the
-     header (24px down and about 33px tall) on a small screen. */
-  padding: 72px 16px;
+  gap: 42px;
+  flex: 1;
+  align-self: stretch;
 }
 
 /* The ball */
@@ -133,8 +131,9 @@ body {
    back is on the far side and hidden until the ball is rotated (see ball-rotate.js). */
 .window {
   position: absolute;
-  top: 62px;
-  left: 62px;
+  /* 149px wide, in the middle of the ball whatever its size. */
+  top: calc(50% - 74.5px);
+  left: calc(50% - 74.5px);
   width: 149px;
   height: 149px;
   border-radius: 50%;
@@ -147,7 +146,7 @@ body {
 .window-front {
   background: var(--ink);
   border: 1px solid var(--ink);
-  box-shadow: var(--window-glow) 0 2px 37px 16px inset;
+  box-shadow: var(--window-glow) 0 2px 112px 58px inset;
 }
 
 .window-back {
@@ -286,7 +285,7 @@ body {
 
 .ask-wrap {
   position: relative;
-  width: 574.5px;
+  width: 420px;
   max-width: 100%;
 }
 
@@ -307,6 +306,23 @@ body {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* The phone design: the same page with a smaller ball, equal padding all round, and the
+   question box across the full width. */
+@media (max-width: 600px) {
+  body {
+    padding: 42px;
+  }
+
+  .ball {
+    width: 230px;
+    height: 230px;
+  }
+
+  .ask-wrap {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

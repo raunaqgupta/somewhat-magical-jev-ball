@@ -1,4 +1,4 @@
-# Magic Jev Ball
+# Somewhat Magical Jev Ball
 
 A Magic 8 Ball whose answers are decided by [Jev](https://docs.typesafe.ai), TypeSafe's System One model.
 Plain HTML/CSS/JS front end, following the Paper design; a small Cloudflare Worker keeps the API key off the browser.
@@ -26,11 +26,16 @@ npx wrangler secret put TYPESAFE_API_KEY   # once
 npm run deploy
 ```
 
-## The header
+## The layout
 
-A tab at the top left of the page reads "Magic Jev Ball" in the Yellowtail script face, as in the Paper
-design (`<header class="site-header">` with the page's `<h1>`). It hangs from the left edge: square on
-the left, rounded on the right, with a 1px border on the other three sides.
+The page follows the Paper designs for a desktop (1280px wide) and a phone (370px wide). The title
+"Somewhat Magical Jev Ball" is centred at the top in the Yellowtail script face
+(`<header class="site-header">` with the page's `<h1>`), and the ball and the question box sit together
+in the space below it, 42px apart, centred in it. The page has 42px of padding above and below and 24px
+at the sides; on a phone (600px wide or less) it is 42px all round, the ball is 230px instead of 273px,
+and the question box runs the full width instead of being 420px wide. The window in the ball is 149px on
+both. The ball's window is nearly flat dark grey (`#474747` at 29% over black, blurred so wide that it
+covers the window evenly), as in the design.
 
 Yellowtail is served from this site (`public/fonts/`, the Latin subset as WOFF2, preloaded), not from
 Google Fonts, so the page makes no third-party request for it. It is licensed under the Apache License

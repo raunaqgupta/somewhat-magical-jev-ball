@@ -70,12 +70,12 @@ test("the back is a white window with the model version in black monospace, cent
   assert.match(text.font, /monospace$/);
 });
 
-test("the front is a dark window with a soft glow at its edge and the answer in grey", () => {
+test("the front is a dark grey window, nearly flat as in the design, and the answer in grey", () => {
   const { ctx, drawn } = fakeContext();
   paintFront(ctx, SIZE, "It is certain");
 
   assert.equal(drawn.fills[0].style, "#000");
-  // The glow is a radial gradient drawn over it, from the middle out to the edge.
+  // The shadow is a radial gradient drawn over it, from the middle out to the edge.
   assert.equal(drawn.gradients.length, 1);
   const [gradient] = drawn.gradients;
   near(gradient.args[2], 0); // starts at a point in the middle
@@ -86,11 +86,13 @@ test("the front is a dark window with a soft glow at its edge and the answer in 
   const positions = gradient.stops.map(([at]) => at);
   assert.equal(positions[0], 0);
   assert.equal(positions.at(-1), 1);
-  assert.equal(opacities[0], 0, "clear in the middle");
-  for (let i = 1; i < opacities.length; i++) assert.ok(opacities[i] > opacities[i - 1], "stronger towards the edge");
-  // The design's glow colour is #5B5B5B at 0x42 / 255 opacity; at the edge about 0.81 of that.
-  near(opacities.at(-1), 0.81 * (0x42 / 255), 1e-3);
-  assert.match(gradient.stops.at(-1)[1], /^rgba\(91,91,91,/);
+  // The design's shadow is #474747 at 0x4A / 255 opacity (inset 0 2px 112px 58px). Its blur is
+  // so wide that it covers the window almost evenly: 0.957 of that in the middle, 0.982 at the edge.
+  near(opacities[0], 0.957 * (0x4a / 255), 1e-3);
+  near(opacities.at(-1), 0.982 * (0x4a / 255), 1e-3);
+  for (const colour of gradient.stops.map(([, c]) => c)) assert.match(colour, /^rgba\(71,71,71,/);
+  // Over black that is a grey of about 20 out of 255 everywhere, and no lighter at the edge than that.
+  for (const opacity of opacities) near(71 * opacity, 20, 0.5);
 
   const [text] = drawn.texts;
   assert.equal(text.text, "It is certain");

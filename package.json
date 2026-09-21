@@ -1,5 +1,5 @@
 {
-  "name": "magic-jev-ball",
+  "name": "somewhat-magical-jev-ball",
   "version": "1.0.0",
   "description": "A Magic 8 Ball powered by TypeSafe's Jev",
   "main": "index.js",
