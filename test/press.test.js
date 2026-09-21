@@ -24,10 +24,10 @@ const ms = (text, property) => {
   return Number(match[1]);
 };
 
-test("the ball is pushed back by shrinking it to 90%, and eases back out", () => {
+test("the ball is pushed back by shrinking it to 90%, and comes back", () => {
   const ball = rule(".ball");
   assert.match(ball, /(?:^|[\s;])scale:\s*1\s*;/m, "resting at full size");
-  assert.match(ball, /transition:\s*scale\s+\d+ms/, "eases back out");
+  assert.match(ball, /transition:\s*scale\s+\d+ms/, "comes back over time");
 
   const pushed = rule(".ball.is-pushed");
   assert.equal(Number(/scale:\s*([\d.]+)\s*;/.exec(pushed)?.[1]), 0.9, "its deepest point is 90% size");
@@ -39,6 +39,19 @@ test("it takes 100ms to reach its deepest point and 600ms to come back to full s
   assert.equal(inn, 100, "time to the deepest point");
   assert.equal(out, 600, "time back to full size");
   assert.ok(inn < out, "still quicker going in than coming back");
+});
+
+test("it eases out going in (quick, then settling) and eases in coming back (slow, then speeding up)", () => {
+  // The way back is the base rule's transition; ease-in is cubic-bezier(0.42, 0, 1, 1).
+  assert.match(rule(".ball"), /transition:\s*scale\s+\d+ms\s+ease-in\s*;/, "the way back eases in");
+
+  // The way in overrides the timing function with an ease-out curve: its first control
+  // point is above the diagonal (it starts faster than linear) and its second is at 1.
+  const curve = /transition-timing-function:\s*cubic-bezier\(([^)]+)\)/.exec(rule(".ball.is-pushed"));
+  assert.ok(curve, "the way in has its own timing function, so it does not share the way back's");
+  const [x1, y1, , y2] = curve[1].split(",").map(Number);
+  assert.ok(y1 > x1, "it starts faster than linear");
+  assert.equal(y2, 1, "it ends by settling into the deepest point");
 });
 
 test("it uses the separate scale property, so it combines with the shake's transform", () => {
