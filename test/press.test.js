@@ -41,9 +41,9 @@ test("it takes 100ms to reach its deepest point and 600ms to come back to full s
   assert.ok(inn < out, "still quicker going in than coming back");
 });
 
-test("it eases out going in (quick, then settling) and eases in coming back (slow, then speeding up)", () => {
-  // The way back is the base rule's transition; ease-in is cubic-bezier(0.42, 0, 1, 1).
-  assert.match(rule(".ball"), /transition:\s*scale\s+\d+ms\s+ease-in\s*;/, "the way back eases in");
+test("it eases out going in (quick, then settling) and eases in and out coming back (slow, faster, slow)", () => {
+  // The way back is the base rule's transition; ease-in-out is cubic-bezier(0.42, 0, 0.58, 1).
+  assert.match(rule(".ball"), /transition:\s*scale\s+\d+ms\s+ease-in-out\s*;/, "the way back eases in and out");
 
   // The way in overrides the timing function with an ease-out curve: its first control
   // point is above the diagonal (it starts faster than linear) and its second is at 1.

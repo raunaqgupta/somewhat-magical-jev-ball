@@ -110,9 +110,10 @@ body {
   -webkit-user-select: none;
   /* A click pushes the ball back into the page: it shrinks a little (the individual
      `scale` property, so it combines with the shake's `transform`) and comes back. This is
-     the way back: it eases in, starting slowly and speeding up as it reaches full size. */
+     the way back: it eases in and out, starting slowly, speeding up, and slowing again as it
+     reaches full size. */
   scale: 1;
-  transition: scale 600ms ease-in;
+  transition: scale 600ms ease-in-out;
 }
 
 .ball.is-pushed {
