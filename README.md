@@ -109,7 +109,14 @@ dashed pills, at random positions and sizes so they read as having depth, then f
 
 - A `Feed` Durable Object (`src/worker.js`) holds one WebSocket per visitor at `/api/feed` and
   relays each question to all of them. **Nothing is stored**: a question is only seen by visitors
-  who are connected when it is asked, and the background is empty when the site is quiet.
+  who are connected when it is asked.
+- **When the site is quiet**, so that the background is not empty, a built-in list of 1000 yes or
+  no questions (`public/idle-questions.js`, all generic and none personal) drifts through it
+  instead. Once no question from another visitor has arrived for 8 seconds, one appears every 2.5
+  to 6 seconds, until a real one arrives, which stops them again. They also fill the background if
+  the feed is unavailable. They come in a random order, each once before any is repeated, and the
+  list is only downloaded when the first one is needed (`public/idle-feed.js` has the timing and
+  the shuffling).
 - Questions containing private personal information (a private individual's name, phone number,
   email or home address) are answered but never shown to others. This is the `personal` noul,
   scored in the same Jev request, hidden above `PERSONAL_THRESHOLD` (0.3). Offensive questions are
