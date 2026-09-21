@@ -15,6 +15,8 @@
 export const BALL_SIZE = 273;
 // How long the ball takes to rotate back to rest after it is let go.
 export const RETURN_MS = 800;
+// How long the full turn takes when the ball is double-tapped.
+export const SPIN_MS = 1000;
 
 const RADIUS = BALL_SIZE / 2;
 
@@ -106,6 +108,25 @@ export function dragPose(q, dx, dy) {
   const half = distance / RADIUS / 2;
   const s = Math.sin(half) / distance;
   return normalize(multiply({ x: dy * s, y: dx * s, z: 0, w: Math.cos(half) }, q));
+}
+
+/** Slow to start, fastest in the middle, slow to stop: a turn that picks up and settles. */
+export const easeInOutCubic = (t) => {
+  const u = Math.min(1, Math.max(0, t));
+  return u < 0.5 ? 4 * u ** 3 : 1 - (-2 * u + 2) ** 3 / 2;
+};
+
+/**
+ * The pose `t` of the way (0 to 1) through one full turn from `from`, about the
+ * screen's vertical axis, front moving right first. The front comes round to the
+ * far side and back again, showing the back face half way, and the turn ends exactly
+ * where it began, so whatever the ball was doing (resting, or still returning to
+ * rest) carries on from there.
+ */
+export function spinFrom(from, t) {
+  if (t >= 1) return from;
+  const half = Math.PI * easeInOutCubic(t); // half the angle turned, 0 to PI
+  return normalize(multiply({ x: 0, y: Math.sin(half), z: 0, w: Math.cos(half) }, from));
 }
 
 /** Fast at first and slowing to a stop: the speed at t = 0 is three times the average. */

@@ -108,6 +108,21 @@ body {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  /* A click pushes the ball back into the page: it shrinks a little (the individual
+     `scale` property, so it combines with the shake's `transform`) and comes back. This is
+     the way back: it eases in and out, starting slowly, speeding up, and slowing again as it
+     reaches full size. */
+  scale: 1;
+  transition: scale 600ms ease-in-out;
+}
+
+.ball.is-pushed {
+  scale: 0.9;
+  /* The way in: quick, and easing out as it reaches its deepest point. The duration is how
+     long that takes; ball-rotate.js reads it, so the push is held until the ball has got
+     there whatever it is set to. */
+  transition-duration: 100ms;
+  transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .ball.is-dragging {
@@ -295,6 +310,16 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* No pushing in and out for people who ask for less motion. */
+  .ball,
+  .ball.is-pushed {
+    transition: none;
+  }
+
+  .ball.is-pushed {
+    scale: 1;
+  }
+
   .ball.shaking,
   .ball.thinking .answer {
     animation: none;

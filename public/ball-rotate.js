@@ -1,6 +1,12 @@
-// Lets the ball be rotated with a mouse or a finger. While it is held, the ball
-// turns with the pointer, like a trackball; when it is let go the ball rotates
-// back to rest, starting fast and slowing down.
+// Lets the ball be handled with a mouse or a finger. Pressing it does nothing by itself:
+//   - Dragging it turns it with the pointer, like a trackball; when it is let go the ball
+//     rotates back to rest, starting fast and slowing down.
+//   - Clicking it (a press let go without a drag) pushes it back into the page and lets it
+//     come back (see .is-pushed in style.css). The push waits a moment, to see whether the
+//     click is the first of a double click.
+//   - Double-clicking it pushes it back and spins it one full turn at the same moment,
+//     showing the back face on the way round. The single click's own, earlier push does
+//     not happen: the push begins with the spin.
 //
 // The ball is drawn as a 3D model (ball3d.js) with both faces on it. If WebGL is
 // unavailable, the two windows (the answer on the front, the model version on the
@@ -11,9 +17,12 @@ import {
   REST_POSE,
   RETURN_MS,
   returnPose,
+  SPIN_MS,
+  spinFrom,
   windowPlacement,
   windowTransform,
 } from "./ball-math.js";
+import { createClickHandler, pushHoldMs } from "./click.js";
 
 const ball = document.getElementById("ball");
 const answerEl = document.getElementById("answer");
@@ -29,6 +38,7 @@ let pose = REST_POSE;
 let drag = null;
 let frame = 0;
 let model = null; // the 3D model, once it has loaded
+let pushTimer = 0; // lets the push out after it has been held for a moment
 
 // The flat fallback: place each window on the ball.
 function renderWindows() {
@@ -59,7 +69,7 @@ function rest() {
 }
 
 function rotateBack() {
-  if (reducedMotion.matches) return rest();
+  if (reducedMotion.matches || pose === REST_POSE) return rest();
 
   const from = pose;
   const start = performance.now();
@@ -73,10 +83,51 @@ function rotateBack() {
   frame = requestAnimationFrame(step);
 }
 
+// The ball is pushed back into the page, then eases out again.
+function push() {
+  clearTimeout(pushTimer);
+  ball.classList.add("is-pushed");
+  // Stay pushed until the ball has reached its deepest point (the transition the stylesheet
+  // gives it), and a moment more, then let go and it eases back out.
+  const hold = pushHoldMs(getComputedStyle(ball).transitionDuration);
+  pushTimer = setTimeout(() => ball.classList.remove("is-pushed"), hold);
+}
+
+// Decides what each press was: a drag, a click (whose push follows after the double-click
+// window), or a double click.
+const clicks = createClickHandler({ onClick: push });
+
+// One full turn from wherever the ball is, then on to rest if it was not already there.
+function spin() {
+  if (reducedMotion.matches) return rotateBack();
+
+  const from = pose;
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / SPIN_MS);
+    pose = spinFrom(from, t);
+    render();
+    if (t < 1) frame = requestAnimationFrame(step);
+    else rotateBack();
+  };
+  frame = requestAnimationFrame(step);
+}
+
 function release(event) {
   if (!drag || event.pointerId !== drag.id) return;
+  const outcome = clicks.up({
+    x: event.clientX,
+    y: event.clientY,
+    movedPx: drag.moved,
+    cancelled: event.type === "pointercancel",
+  });
   drag = null;
   ball.classList.remove("is-dragging");
+
+  if (outcome === "double-click") {
+    push(); // the push and the spin start together
+    return spin();
+  }
   rotateBack();
 }
 
@@ -86,8 +137,17 @@ if (ball && answerEl && faces.every(({ el }) => el)) {
     if (drag || (event.pointerType === "mouse" && event.button !== 0)) return;
     // Catching the ball mid-return picks it up from where it is.
     cancelAnimationFrame(frame);
+    clicks.down({ x: event.clientX, y: event.clientY });
     ball.setPointerCapture(event.pointerId);
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    drag = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      startX: event.clientX,
+      startY: event.clientY,
+      startedAt: performance.now(),
+      moved: 0, // the furthest the pointer has been from where it went down
+    };
     ball.classList.add("is-dragging");
   });
 
@@ -96,6 +156,7 @@ if (ball && answerEl && faces.every(({ el }) => el)) {
     pose = dragPose(pose, event.clientX - drag.x, event.clientY - drag.y);
     drag.x = event.clientX;
     drag.y = event.clientY;
+    drag.moved = Math.max(drag.moved, Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY));
     render();
   });
 
