@@ -4,8 +4,9 @@
 //   - Clicking it (a press let go without a drag) pushes it back into the page and lets it
 //     come back (see .is-pushed in style.css). The push waits a moment, to see whether the
 //     click is the first of a double click.
-//   - Double-clicking it spins it one full turn, showing the back face on the way round,
-//     and the single click's push does not happen.
+//   - Double-clicking it pushes it back and spins it one full turn at the same moment,
+//     showing the back face on the way round. The single click's own, earlier push does
+//     not happen: the push begins with the spin.
 //
 // The ball is drawn as a 3D model (ball3d.js) with both faces on it. If WebGL is
 // unavailable, the two windows (the answer on the front, the model version on the
@@ -123,7 +124,10 @@ function release(event) {
   drag = null;
   ball.classList.remove("is-dragging");
 
-  if (outcome === "double-click") return spin();
+  if (outcome === "double-click") {
+    push(); // the push and the spin start together
+    return spin();
+  }
   rotateBack();
 }
 
@@ -133,7 +137,7 @@ if (ball && answerEl && faces.every(({ el }) => el)) {
     if (drag || (event.pointerType === "mouse" && event.button !== 0)) return;
     // Catching the ball mid-return picks it up from where it is.
     cancelAnimationFrame(frame);
-    clicks.down();
+    clicks.down({ x: event.clientX, y: event.clientY });
     ball.setPointerCapture(event.pointerId);
     drag = {
       id: event.pointerId,

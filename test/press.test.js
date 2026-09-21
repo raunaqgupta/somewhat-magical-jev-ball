@@ -66,18 +66,23 @@ test("pressing the ball does not move it", () => {
   assert.doesNotMatch(down, /is-pushed/, "no push class on press");
   assert.doesNotMatch(down, /is-pressed/, "no pressed class either");
   assert.doesNotMatch(down, /\bpush\(/, "no push on press");
-  assert.match(down, /clicks\.down\(\)/, "it only tells the click handler a press began");
+  assert.match(down, /clicks\.down\(\{ x: event\.clientX, y: event\.clientY \}\)/, "it only tells the click handler where a press began");
 });
 
-test("the push is only done through a registered click, and only ever from one place", () => {
-  assert.match(rotate, /createClickHandler\(\{ onClick: push \}\)/);
+test("the push is reached only through a registered click or a double click, and from one place", () => {
+  assert.match(rotate, /createClickHandler\(\{ onClick: push \}\)/, "a single click's push follows the wait");
   assert.equal((rotate.match(/classList\.add\("is-pushed"\)/g) ?? []).length, 1, "the class is added in one place");
-  assert.equal((rotate.match(/(?<!function )\bpush\(\)/g) ?? []).length, 0, "and push() is never called directly");
+  // The one direct call is the double click's, which starts the push with the spin.
+  assert.equal((rotate.match(/(?<!function )\bpush\(\)/g) ?? []).length, 1, "push() is called directly once");
   assert.match(rotate, /from "\.\/click\.js"/);
 });
 
-test("a double click spins the ball and a cancelled press counts as no click", () => {
-  assert.match(rotate, /outcome === "double-click"\) return spin\(\)/);
-  assert.match(rotate, /cancelled: event\.type === "pointercancel"/);
+test("a double click pushes and spins the ball at the same moment", () => {
+  // Both start in the one branch, one straight after the other in the same task, so on the same frame.
+  assert.match(rotate, /outcome === "double-click"\) \{\s*push\(\);[^}]*return spin\(\);\s*\}/);
   assert.match(rotate, /spinFrom\(from, t\)/);
+});
+
+test("a cancelled press counts as no click", () => {
+  assert.match(rotate, /cancelled: event\.type === "pointercancel"/);
 });
