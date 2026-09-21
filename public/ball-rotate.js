@@ -1,9 +1,11 @@
-// Lets the ball be handled with a mouse or a finger:
-//   - Pressing it pushes it back into the page (see .is-pressed in style.css); it eases
-//     back out when let go, and a quick click holds the push long enough to be seen.
+// Lets the ball be handled with a mouse or a finger. Pressing it does nothing by itself:
 //   - Dragging it turns it with the pointer, like a trackball; when it is let go the ball
 //     rotates back to rest, starting fast and slowing down.
-//   - Double-tapping it spins it one full turn, showing the back face on the way round.
+//   - Clicking it (a press let go without a drag) pushes it back into the page and lets it
+//     come back (see .is-pushed in style.css). The push waits a moment, to see whether the
+//     click is the first of a double click.
+//   - Double-clicking it spins it one full turn, showing the back face on the way round,
+//     and the single click's push does not happen.
 //
 // The ball is drawn as a 3D model (ball3d.js) with both faces on it. If WebGL is
 // unavailable, the two windows (the answer on the front, the model version on the
@@ -19,7 +21,10 @@ import {
   windowPlacement,
   windowTransform,
 } from "./ball-math.js";
-import { isDoubleTap, isTap, pressHoldRemaining } from "./tap.js";
+import { createClickHandler } from "./click.js";
+
+// How long the ball stays pushed back before it eases out again.
+const PUSH_HOLD_MS = 140;
 
 const ball = document.getElementById("ball");
 const answerEl = document.getElementById("answer");
@@ -35,8 +40,7 @@ let pose = REST_POSE;
 let drag = null;
 let frame = 0;
 let model = null; // the 3D model, once it has loaded
-let lastTap = null; // the previous tap ({ at, x, y }), to spot a double tap
-let releaseTimer = 0; // lets the push out once it has been held long enough to be seen
+let pushTimer = 0; // lets the push out after it has been held for a moment
 
 // The flat fallback: place each window on the ball.
 function renderWindows() {
@@ -81,6 +85,17 @@ function rotateBack() {
   frame = requestAnimationFrame(step);
 }
 
+// The ball is pushed back into the page, then eases out again.
+function push() {
+  clearTimeout(pushTimer);
+  ball.classList.add("is-pushed");
+  pushTimer = setTimeout(() => ball.classList.remove("is-pushed"), PUSH_HOLD_MS);
+}
+
+// Decides what each press was: a drag, a click (whose push follows after the double-click
+// window), or a double click.
+const clicks = createClickHandler({ onClick: push });
+
 // One full turn from wherever the ball is, then on to rest if it was not already there.
 function spin() {
   if (reducedMotion.matches) return rotateBack();
@@ -99,21 +114,16 @@ function spin() {
 
 function release(event) {
   if (!drag || event.pointerId !== drag.id) return;
-  const now = performance.now();
-  const heldMs = now - drag.startedAt;
-  const tap = { at: now, x: event.clientX, y: event.clientY };
-  const tapped = event.type === "pointerup" && isTap({ heldMs, movedPx: drag.moved });
+  const outcome = clicks.up({
+    x: event.clientX,
+    y: event.clientY,
+    movedPx: drag.moved,
+    cancelled: event.type === "pointercancel",
+  });
   drag = null;
   ball.classList.remove("is-dragging");
 
-  // Ease the push out, but not before it has been held long enough to be seen.
-  releaseTimer = setTimeout(() => ball.classList.remove("is-pressed"), pressHoldRemaining(heldMs));
-
-  if (tapped && isDoubleTap(lastTap, tap)) {
-    lastTap = null;
-    return spin();
-  }
-  lastTap = tapped ? tap : null;
+  if (outcome === "double-click") return spin();
   rotateBack();
 }
 
@@ -123,7 +133,7 @@ if (ball && answerEl && faces.every(({ el }) => el)) {
     if (drag || (event.pointerType === "mouse" && event.button !== 0)) return;
     // Catching the ball mid-return picks it up from where it is.
     cancelAnimationFrame(frame);
-    clearTimeout(releaseTimer);
+    clicks.down();
     ball.setPointerCapture(event.pointerId);
     drag = {
       id: event.pointerId,
@@ -134,7 +144,7 @@ if (ball && answerEl && faces.every(({ el }) => el)) {
       startedAt: performance.now(),
       moved: 0, // the furthest the pointer has been from where it went down
     };
-    ball.classList.add("is-dragging", "is-pressed");
+    ball.classList.add("is-dragging");
   });
 
   ball.addEventListener("pointermove", (event) => {

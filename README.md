@@ -65,16 +65,19 @@ shows the back. When you let go the ball rotates back to rest over 800ms about a
 short way, fast at first and slowing down (ease-out cubic). Catching it mid-return picks it up
 again. With `prefers-reduced-motion` it snaps back instead.
 
-**Pressing** the ball pushes it back into the page: it shrinks to 92% (fast) while it is held, and eases
-back out (slower) when let go. A quick click holds the push for at least 140ms so the dip can be seen. A
-drag is a press too, so the ball stays pushed in while it is turned.
+**Pressing does nothing by itself.** The ball reacts only once a *click* has fully registered, meaning a press let go
+without having been dragged (a drag turns the ball instead, and a long hold that is released still counts as a click).
 
-**Double-tapping** the ball spins it one full turn about its vertical axis over a second, front moving right
-first, showing the back face half way round, and it ends exactly where it began (or carries on to rest if it
-was still returning). A double tap is two quick presses, each barely moving, close together in time (400ms)
-and place (30px), worked out from pointer events so a mouse and a finger behave the same. A drag between
-the two, or a slow or distant second tap, is not a double tap. People who ask for reduced motion get
-neither the push nor the spin. The rules are in `public/tap.js`.
+**Clicking** the ball pushes it back into the page: it shrinks to 92% (fast, 120ms) and eases back out (slower,
+500ms). Because a click might be the first half of a double click, the push waits for the double-click window (300ms)
+to pass with no second click. So a single click reacts about a third of a second after it is released.
+
+**Double-clicking** the ball spins it one full turn about its vertical axis over a second, front moving right first,
+showing the back face half way round, and it ends exactly where it began (or carries on to rest if it was still
+returning). **The single click's push does not happen** for a double click: the second click cancels it. A double click
+is two clicks within 300ms (release to release) and 30px, worked out from pointer events so a mouse and a finger
+behave the same. A drag between the two, or a slow or distant second click, is not a double click. People who ask
+for reduced motion get neither the push nor the spin. The rules are in `public/click.js`.
 
 If WebGL is unavailable the flat ball is used, and its two windows are moved and turned around it
 with the same geometry (`public/ball-math.js`), so the text still flips. Pointer handling is in
