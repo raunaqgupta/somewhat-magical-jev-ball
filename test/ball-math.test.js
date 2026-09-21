@@ -269,3 +269,99 @@ test("windowTransform turns the window in its own plane last, by the roll", () =
   // With no roll given it is a quarter of nothing, and the window is as before.
   assert.match(windowTransform({ dx: 1, dy: 2, angle: 0, scale: 1 }), /rotate\(0\.0000rad\)$/);
 });
+
+// ---- Double tap: one full turn.
+
+import { easeInOutCubic, spinFrom, SPIN_MS } from "../public/ball-math.js";
+
+// The angle the front has turned through, unwrapped, as seen from above (0 at rest, up to 2 pi).
+const turned = (q) => {
+  const v = rotate(q, { x: 0, y: 0, z: 1 });
+  return Math.atan2(v.x, v.z);
+};
+
+test("the spin's ease is slow at each end and fastest in the middle, and symmetrical", () => {
+  assert.equal(easeInOutCubic(0), 0);
+  assert.equal(easeInOutCubic(0.5), 0.5);
+  assert.equal(easeInOutCubic(1), 1);
+  assert.equal(easeInOutCubic(-1), 0);
+  assert.equal(easeInOutCubic(2), 1);
+  for (let t = 0; t <= 1; t += 0.05) near(easeInOutCubic(t) + easeInOutCubic(1 - t), 1, 1e-12);
+  // Slow to start: the first tenth covers far less than a tenth; fast in the middle: more.
+  assert.ok(easeInOutCubic(0.1) < 0.01);
+  assert.ok(easeInOutCubic(0.55) - easeInOutCubic(0.45) > 0.2);
+  let last = 0;
+  for (let t = 0; t <= 1; t += 0.01) {
+    assert.ok(easeInOutCubic(t) >= last - 1e-12);
+    last = easeInOutCubic(t);
+  }
+});
+
+test("the spin starts where the ball is and ends exactly where it started", () => {
+  assert.equal(spinFrom(REST_POSE, 1), REST_POSE);
+  assert.equal(spinFrom(REST_POSE, 2), REST_POSE);
+  const a = windowPlacement(spinFrom(REST_POSE, 0), "front");
+  near(a.dx, 0, 1e-12);
+  near(a.opacity, 1, 1e-12);
+  // From any other pose, too (say the ball is still returning to rest): it comes back to that pose.
+  for (const from of poses(40)) {
+    assert.equal(spinFrom(from, 1), from);
+    const start = spinFrom(from, 0);
+    near(windowPlacement(start, "front").dx, windowPlacement(from, "front").dx, 1e-9);
+    near(windowPlacement(start, "back").dy, windowPlacement(from, "back").dy, 1e-9);
+  }
+});
+
+test("half way through, the ball has turned right round: the back faces the viewer", () => {
+  const half = spinFrom(REST_POSE, 0.5);
+  const back = windowPlacement(half, "back");
+  near(back.dx, 0, 1e-9);
+  near(back.dy, 0, 1e-9);
+  near(back.opacity, 1, 1e-9);
+  assert.equal(windowPlacement(half, "front").opacity, 0);
+});
+
+test("it turns exactly once round, in one direction, front moving right first", () => {
+  assert.ok(windowPlacement(spinFrom(REST_POSE, 0.15), "front").dx > 0, "the front moves right first");
+  let unwrapped = 0;
+  let previous = 0;
+  const steps = 400;
+  for (let i = 1; i <= steps; i++) {
+    let angle = turned(spinFrom(REST_POSE, i / steps));
+    // Bring each step onto the same lap as the one before.
+    while (angle - previous < -Math.PI) angle += 2 * Math.PI;
+    while (angle - previous > Math.PI) angle -= 2 * Math.PI;
+    assert.ok(angle >= previous - 1e-9, `turned backwards at step ${i}`);
+    previous = angle;
+    unwrapped = angle;
+  }
+  // The last step is the exact end (the pose it began at), so measure the one before it.
+  const nearEnd = turned(spinFrom(REST_POSE, 0.9999));
+  near(Math.cos(nearEnd), 1, 1e-3);
+  assert.ok(unwrapped <= 2 * Math.PI + 1e-6);
+});
+
+test("the spin is about the vertical axis: the window stays level and its text stays upright", () => {
+  for (let t = 0; t <= 1; t += 0.02) {
+    for (const face of ["front", "back"]) {
+      const p = windowPlacement(spinFrom(REST_POSE, t), face);
+      near(p.dy, 0, 1e-9);
+      near(p.roll, 0, 1e-9);
+    }
+  }
+});
+
+test("a spin from a tilted ball turns it a full turn about the screen's vertical axis, ending where it began", () => {
+  const tilted = dragPose(REST_POSE, 40, 90);
+  const half = spinFrom(tilted, 0.5);
+  // A half turn about the vertical axis flips x and z and leaves y alone.
+  const before = rotate(tilted, { x: 0.3, y: 0.5, z: 0.8 });
+  const after = rotate(half, { x: 0.3, y: 0.5, z: 0.8 });
+  near(after.x, -before.x, 1e-9);
+  near(after.y, before.y, 1e-9);
+  near(after.z, -before.z, 1e-9);
+});
+
+test("the spin takes about a second", () => {
+  assert.ok(SPIN_MS >= 600 && SPIN_MS <= 1500, `${SPIN_MS}ms`);
+});
