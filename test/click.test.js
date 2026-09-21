@@ -7,6 +7,8 @@ import {
   DOUBLE_CLICK_MS,
   isClick,
   isDoubleClick,
+  PUSH_REST_MS,
+  pushHoldMs,
 } from "../public/click.js";
 
 // A handler on a fake clock, so time can be stepped through exactly. `advance` runs any
@@ -239,4 +241,31 @@ test("what can start a double click: a press soon enough and near enough after a
 
 test("the wait is 0.15 seconds", () => {
   assert.equal(DOUBLE_CLICK_MS, 150);
+});
+
+test("the push is held until the ball has reached its deepest point, plus a short rest", () => {
+  // getComputedStyle reports durations in seconds.
+  assert.equal(pushHoldMs("0.24s"), 240 + PUSH_REST_MS);
+  assert.equal(pushHoldMs("0.12s"), 120 + PUSH_REST_MS);
+  // Written in milliseconds, or as a list (the longest wins), or with padding.
+  assert.equal(pushHoldMs("240ms"), 240 + PUSH_REST_MS);
+  assert.equal(pushHoldMs("0.24s, 0.5s"), 500 + PUSH_REST_MS);
+  assert.equal(pushHoldMs("  0.24s  "), 240 + PUSH_REST_MS);
+});
+
+test("with no transition (reduced motion) there is nothing to wait for, only the rest", () => {
+  assert.equal(pushHoldMs("0s"), PUSH_REST_MS);
+  assert.equal(pushHoldMs(""), PUSH_REST_MS);
+  assert.equal(pushHoldMs(undefined), PUSH_REST_MS);
+  assert.equal(pushHoldMs("none"), PUSH_REST_MS);
+});
+
+test("a longer push-in is never cut short: the hold always covers the transition", () => {
+  for (const ms of [50, 120, 240, 400, 900]) {
+    assert.ok(pushHoldMs(`${ms / 1000}s`) > ms, `${ms}ms`);
+  }
+});
+
+test("the rest at the deepest point is brief", () => {
+  assert.ok(PUSH_REST_MS > 0 && PUSH_REST_MS <= 60, `${PUSH_REST_MS}ms`);
 });

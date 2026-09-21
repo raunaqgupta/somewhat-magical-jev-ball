@@ -22,6 +22,26 @@ export const CLICK_MAX_MOVE_PX = 8;
 export const DOUBLE_CLICK_MS = 150;
 export const DOUBLE_CLICK_DISTANCE_PX = 30;
 
+/** How long the ball rests at its deepest point before it eases back out. */
+export const PUSH_REST_MS = 20;
+
+/**
+ * How long to keep the ball pushed, given the CSS `transition-duration` it is pushed with
+ * (as `getComputedStyle` reports it: "0.24s", "240ms", or a list of them). The push has
+ * to last until the ball has got to its deepest point, or it would be let go part of the
+ * way down, so this is that duration plus a short rest. With no transition (reduced
+ * motion) there is nothing to wait for, only the rest.
+ */
+export function pushHoldMs(transitionDuration) {
+  const times = String(transitionDuration ?? "")
+    .split(",")
+    .map((part) => {
+      const match = /^\s*([\d.]+)(ms|s)\s*$/.exec(part);
+      return match ? Number(match[1]) * (match[2] === "s" ? 1000 : 1) : 0;
+    });
+  return Math.max(0, ...times) + PUSH_REST_MS;
+}
+
 /** `movedPx` is the furthest the pointer got from where it went down. */
 export const isClick = ({ movedPx }) => movedPx <= CLICK_MAX_MOVE_PX;
 

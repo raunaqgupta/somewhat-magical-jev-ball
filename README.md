@@ -68,7 +68,7 @@ again. With `prefers-reduced-motion` it snaps back instead.
 **Pressing does nothing by itself.** The ball reacts only once a *click* has fully registered, meaning a press let go
 without having been dragged (a drag turns the ball instead, and a long hold that is released still counts as a click).
 
-**Clicking** the ball pushes it back into the page: it shrinks to 92% (fast, 120ms) and eases back out (slower,
+**Clicking** the ball pushes it back into the page: it eases in to 92% (240ms) and then eases back out (slower,
 500ms). Because a click might be the first half of a double click, the push waits 0.15 seconds to see whether a
 second press begins.
 

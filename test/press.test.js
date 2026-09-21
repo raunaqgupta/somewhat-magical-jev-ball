@@ -34,12 +34,13 @@ test("the ball is pushed back by shrinking it a little, and eases back out", () 
   assert.ok(scale > 0.8 && scale < 0.97, `pushed to ${scale}: enough to see, not so much it looks broken`);
 });
 
-test("it goes in quickly and comes back more slowly", () => {
+test("it takes about twice as long to go in as it once did, and comes back more slowly still", () => {
   const out = ms(rule(".ball"), "transition");
   const inn = ms(rule(".ball.is-pushed"), "transition-duration");
-  assert.ok(inn <= 200, `${inn}ms in`);
+  // It used to reach its deepest point in 120ms; now about double that.
+  assert.ok(inn >= 200 && inn <= 300, `${inn}ms in`);
   assert.ok(out >= 300 && out <= 900, `${out}ms out`);
-  assert.ok(inn < out);
+  assert.ok(inn < out, "still quicker going in than coming back");
 });
 
 test("it uses the separate scale property, so it combines with the shake's transform", () => {
@@ -85,4 +86,10 @@ test("a double click pushes and spins the ball at the same moment", () => {
 
 test("a cancelled press counts as no click", () => {
   assert.match(rotate, /cancelled: event\.type === "pointercancel"/);
+});
+
+test("the push is held for the stylesheet's own duration, not a number that could drift from it", () => {
+  assert.match(rotate, /pushHoldMs\(getComputedStyle\(ball\)\.transitionDuration\)/);
+  assert.doesNotMatch(rotate, /PUSH_HOLD_MS/, "no separate fixed hold to keep in step with the CSS");
+  assert.match(rotate, /setTimeout\(\(\) => ball\.classList\.remove\("is-pushed"\), hold\)/);
 });

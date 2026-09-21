@@ -22,10 +22,7 @@ import {
   windowPlacement,
   windowTransform,
 } from "./ball-math.js";
-import { createClickHandler } from "./click.js";
-
-// How long the ball stays pushed back before it eases out again.
-const PUSH_HOLD_MS = 140;
+import { createClickHandler, pushHoldMs } from "./click.js";
 
 const ball = document.getElementById("ball");
 const answerEl = document.getElementById("answer");
@@ -90,7 +87,10 @@ function rotateBack() {
 function push() {
   clearTimeout(pushTimer);
   ball.classList.add("is-pushed");
-  pushTimer = setTimeout(() => ball.classList.remove("is-pushed"), PUSH_HOLD_MS);
+  // Stay pushed until the ball has reached its deepest point (the transition the stylesheet
+  // gives it), and a moment more, then let go and it eases back out.
+  const hold = pushHoldMs(getComputedStyle(ball).transitionDuration);
+  pushTimer = setTimeout(() => ball.classList.remove("is-pushed"), hold);
 }
 
 // Decides what each press was: a drag, a click (whose push follows after the double-click
