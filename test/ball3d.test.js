@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Vector3 } from "three";
-import { buildScene, faceGeometry } from "../public/ball3d.js";
+import { buildScene, faceGeometry, faceRadiusFor } from "../public/ball3d.js";
 import { BALL_SIZE, dragPose, REST_POSE, windowPlacement } from "../public/ball-math.js";
 
 const RADIUS = BALL_SIZE / 2;
@@ -144,6 +144,35 @@ test("each face is a cap of the sphere as wide as the design's 149px window, on 
       const r = Math.hypot(position.getX(i), position.getY(i), position.getZ(i));
       near(r, 1.002, 1e-6);
     }
+  }
+});
+
+test("on a smaller ball the window is still 149px, so its cap covers more of the sphere", () => {
+  // The phone design's ball is 230px across, with the same 149px window in it.
+  assert.equal(faceRadiusFor(273), 149 / 273);
+  const radius = faceRadiusFor(230);
+  assert.ok(radius > faceRadiusFor(273));
+  for (const side of [1, -1]) {
+    const geometry = faceGeometry(side, radius);
+    geometry.computeBoundingBox();
+    const { min, max } = geometry.boundingBox;
+    near((max.x - min.x) * (230 / 2), 149, 0.5);
+    near((max.y - min.y) * (230 / 2), 149, 0.5);
+  }
+  // The texture still spans the face exactly, whatever its size.
+  const uv = faceGeometry(1, radius).attributes.uv;
+  let minU = Infinity, maxU = -Infinity;
+  for (let i = 0; i < uv.count; i++) {
+    minU = Math.min(minU, uv.getX(i));
+    maxU = Math.max(maxU, uv.getX(i));
+  }
+  near(minU, 0, 0.01);
+  near(maxU, 1, 0.01);
+  // The scene's faces take it too.
+  const { front, back } = buildScene({ faceRadius: radius });
+  for (const mesh of [front, back]) {
+    mesh.geometry.computeBoundingBox();
+    near((mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x) * (230 / 2), 149, 0.5);
   }
 });
 

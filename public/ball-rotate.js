@@ -13,6 +13,7 @@
 // back) are moved around the flat ball instead, with the same geometry, so the
 // text still turns upside down when the ball is flipped over.
 import {
+  BALL_SIZE,
   dragPose,
   REST_POSE,
   RETURN_MS,
@@ -40,11 +41,16 @@ let frame = 0;
 let model = null; // the 3D model, once it has loaded
 let pushTimer = 0; // lets the push out after it has been held for a moment
 
+// The turning is worked out for the design's 273px ball; a phone's ball is smaller. This is
+// its size as a share of that, to scale the drag and the flat windows by.
+const sizeRatio = () => (ball.clientWidth || BALL_SIZE) / BALL_SIZE;
+
 // The flat fallback: place each window on the ball.
 function renderWindows() {
   for (const { face, el } of faces) {
     const placement = windowPlacement(pose, face);
-    el.style.transform = windowTransform(placement);
+    const ratio = sizeRatio();
+    el.style.transform = windowTransform({ ...placement, dx: placement.dx * ratio, dy: placement.dy * ratio });
     el.style.opacity = String(placement.opacity);
   }
 }
@@ -153,7 +159,8 @@ if (ball && answerEl && faces.every(({ el }) => el)) {
 
   ball.addEventListener("pointermove", (event) => {
     if (!drag || event.pointerId !== drag.id) return;
-    pose = dragPose(pose, event.clientX - drag.x, event.clientY - drag.y);
+    const ratio = sizeRatio();
+    pose = dragPose(pose, (event.clientX - drag.x) / ratio, (event.clientY - drag.y) / ratio);
     drag.x = event.clientX;
     drag.y = event.clientY;
     drag.moved = Math.max(drag.moved, Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY));

@@ -11,18 +11,18 @@ const LINE_PX = 18;
 const FRONT_FONT = "system-ui, sans-serif";
 const BACK_FONT = 'ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
 
-// The front's inner glow, from the design: inset 0 2px 37px 16px #5B5B5B42. That is
-// a band along the edge, solid for 16px then blurred over about 37px. This is its
-// opacity, as a share of the glow colour's own opacity, at each fraction of the
-// way from the centre (0) to the edge (1) of the 149px window.
-const GLOW_COLOR = [91, 91, 91];
-const GLOW_OPACITY = 0x42 / 255;
+// The front's inner glow, from the design: inset 0 2px 112px 58px #4747474A. The 58px
+// spread leaves only a 33px disc unshadowed, and the 112px blur spreads that so far that
+// the whole window is a near-flat dark grey (about 20 of 255). This is the shadow's
+// opacity, as a share of the glow colour's own opacity, at each fraction of the way from
+// the centre (0) to the edge (1) of the 149px window: 1 minus the share of the blur that
+// falls on the unshadowed disc.
+const GLOW_COLOR = [71, 71, 71];
+const GLOW_OPACITY = 0x4a / 255;
 const GLOW_STOPS = [
-  [0, 0],
-  [0.29, 0.03],
-  [0.53, 0.15],
-  [0.785, 0.5],
-  [1, 0.81],
+  [0, 0.957],
+  [0.5, 0.966],
+  [1, 0.982],
 ];
 
 /** Split `text` into lines no wider than `maxWidth`, breaking at spaces. `measure` gives a string's width. */
