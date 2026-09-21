@@ -31,6 +31,9 @@
 
 html {
   height: 100%;
+  /* The page scrolls as usual. Setting this, rather than leaving it visible, stops the body's
+     overflow being passed up to the page, so it clips the body itself (see below). */
+  overflow: auto;
 }
 
 /* The page, as in the Paper design: a grid of three columns and five rows, with the title,
@@ -44,6 +47,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 420px 1fr;
   grid-template-rows: 1fr 63px 346px 118px 1fr;
+  /* The lines run out 100vw past their cells; none of that should make the page scroll. */
   overflow-x: clip;
   background: var(--bg);
   color: var(--ink);
@@ -361,34 +365,23 @@ body::before {
   white-space: nowrap;
 }
 
-/* The phone design: the same page with a smaller ball, and the question box across the full
-   width. There is room for neither the lines nor the empty columns, so the page is one column
-   with the title at the top and the ball and the question box centred in the space below it,
-   42px apart, and 42px of padding all round. */
+/* The phone design: the same grid with a smaller ball and 16px at the sides of the cells. The
+   middle column is as wide as the title (about 300px), and the empty columns take the rest,
+   so the box has a strip of the page's lines on either side of it. The title's row grows
+   if the title has to wrap on a very narrow phone. */
 @media (max-width: 600px) {
   body {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 1fr auto auto 1fr;
-    padding: 42px;
-  }
-
-  body::before,
-  .site-header::before,
-  .ball-cell::before,
-  .ask-cell::before,
-  .ask-cell::after {
-    display: none;
-  }
-
-  .site-header,
-  .ball-cell,
-  .ask-cell {
-    padding: 0;
-    border: 0;
+    grid-template-columns: 1fr minmax(0, max-content) 1fr;
+    grid-template-rows: 1fr minmax(63px, auto) 252px 118px 1fr;
   }
 
   .site-header {
-    grid-area: 1 / 1;
+    padding: 16px;
+  }
+
+  .ball-cell,
+  .ask-cell {
+    padding: 36px 16px;
   }
 
   .site-title {
@@ -397,18 +390,9 @@ body::before {
     white-space: normal;
   }
 
-  .ball-cell {
-    grid-area: 3 / 1;
-  }
-
-  .ask-cell {
-    grid-area: 4 / 1;
-    margin-top: 42px;
-  }
-
   .ball {
-    width: 230px;
-    height: 230px;
+    width: 179px;
+    height: 179px;
   }
 }
 

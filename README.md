@@ -37,12 +37,16 @@ run between the cells across the whole page, and the middle column's box is draw
 draw these lines themselves (their top edges, run out to both sides, and the column's sides), so there
 are no extra elements for them.
 
-On a phone (600px wide or less) there is no room for the lines or the empty columns, so the page is a
-single column with 42px of padding all round: the title at the top, and the ball (230px instead of 273px)
-and the question box (the full width) centred in the space below it, 42px apart. The title wraps onto
-two lines on the narrowest phones. The window in the ball is 149px on both. The ball's window is nearly
-flat dark grey (`#474747` at 29% over black, blurred so wide that it covers the window evenly), as in the
-design.
+On a phone (600px wide or less) it is the same grid with different sizes: the ball is 179px instead of
+273px, the cells have 16px at the sides, and the middle column is as wide as the title (about 300px)
+instead of 420px, with the empty columns taking the rest. The rows are `1fr 63px 252px 118px 1fr`; the
+title's row grows if the title has to wrap, which it only does on phones narrower than the title (about
+300px). The window in the ball is 149px on both. The ball's window is nearly flat dark grey (`#474747`
+at 29% over black, blurred so wide that it covers the window evenly), as in the design.
+
+The lines run out 100vw past their cells, so `html` and `body` are set so that the body clips them
+(`overflow-x: clip` only works on the body if the page's own overflow is not `visible`); otherwise the
+page would scroll sideways.
 
 The title's script face, Ballet, is served from this site (`public/fonts/`, the Latin subset as WOFF2,
 preloaded), not from Google Fonts, so the page makes no third-party request for it. It is licensed under
