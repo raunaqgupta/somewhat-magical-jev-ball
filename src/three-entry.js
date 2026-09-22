@@ -6,7 +6,6 @@ export {
   Group,
   Mesh,
   MeshPhongMaterial,
-  MeshPhysicalMaterial,
   OrthographicCamera,
   PointLight,
   Scene,

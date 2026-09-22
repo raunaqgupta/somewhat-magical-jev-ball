@@ -11,7 +11,6 @@ import {
   Group,
   Mesh,
   MeshPhongMaterial,
-  MeshPhysicalMaterial,
   OrthographicCamera,
   PointLight,
   Scene,
@@ -131,19 +130,23 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   // The plain sphere: MeshPhongMaterial and flatShading, the same as the example above's
   // own sphere (own colour, 0x030303, kept; the example's own material had none, defaulting
   // to plain white, which is the example's own choice for its own generic demo, not a
-  // property of "which material", so not something to carry over here). Phong has no
-  // clearcoat layer, so the highlight is its ordinary specular one instead now; the two
-  // faces, carrying text and the window's own painted-in glow (face-texture.js), keep their
-  // own separate, still-clearcoat finish, tuned in earlier commits to stay soft on the text.
+  // property of "which material", so not something to carry over here).
   const sphere = new Mesh(
     // 20 and 10 segments, the same as the example's own sphere (own radius: 1, ours, not
     // its 200, which was sized for that scene, not this one).
     new SphereGeometry(1, 20, 10),
     dither(new MeshPhongMaterial({ color: 0x030303, flatShading: true })),
   );
-  const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.9 };
-  const front = new Mesh(faceGeometry(1, faceRadius), dither(new MeshPhysicalMaterial({ map: frontMap, ...faceFinish })));
-  const back = new Mesh(faceGeometry(-1, faceRadius), dither(new MeshPhysicalMaterial({ map: backMap, ...faceFinish })));
+  // The two faces, carrying text and the window's own painted-in glow (face-texture.js), are
+  // MeshPhongMaterial too now, but not flat-shaded: their own geometry is already smooth (64
+  // and 32 segments, not the sphere's 20 and 10), and flat shading would break their texture
+  // up into visible facets. Phong's highlight is shaped by shininess (how tight it is) and
+  // specular (how bright): low and dim, the same "broad and faint rather than a glint" a
+  // first attempt at MeshPhysicalMaterial's own clearcoat needed too, to avoid a hard, blown-
+  // out spot landing right on the text.
+  const faceFinish = { shininess: 10, specular: 0x222222 };
+  const front = new Mesh(faceGeometry(1, faceRadius), dither(new MeshPhongMaterial({ map: frontMap, ...faceFinish })));
+  const back = new Mesh(faceGeometry(-1, faceRadius), dither(new MeshPhongMaterial({ map: backMap, ...faceFinish })));
 
   // Turning the ball turns everything in this group; the lights stay where they are.
   const ball = new Group();
