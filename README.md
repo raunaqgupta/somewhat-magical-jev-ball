@@ -3,7 +3,7 @@
 A Magic 8 Ball whose answers are decided by [Jev](https://docs.typesafe.ai), TypeSafe's System One model.
 Plain HTML/CSS/JS front end, following the Paper design; a small Cloudflare Worker keeps the API key off the browser.
 
-Live at https://magicjevball.raunaqgupta.com
+Live at https://somewhatmagicaljevball.com
 
 ## Run
 
@@ -17,14 +17,31 @@ npm test
 ## Deploy
 
 `public/` is served as static assets and `src/worker.js` handles `/api/ask`
-(`wrangler.jsonc`). The custom domain and a rate limit of 20 requests per minute per IP
+(`wrangler.jsonc`). The custom domains and a rate limit of 20 requests per minute per IP
 are configured there.
 
 ```sh
 npx wrangler login
-npx wrangler secret put TYPESAFE_API_KEY   # once
+npx wrangler secret put TYPESAFE_API_KEY   # once, until the AI Gateway token is set (see below)
 npm run deploy
 ```
+
+### Calling TypeSafe through Cloudflare AI Gateway
+
+TypeSafe is called through an AI Gateway (`somewhat-magical-jev-ball`, `wrangler.jsonc`'s
+`AI_GATEWAY_BASE_URL`), which holds the real TypeSafe key itself as a Bring Your Own Key, so the
+Worker never has to. Reaching the gateway needs its own auth, the `CF_AI_GATEWAY_TOKEN` secret
+(the gateway's `cf-aig-authorization` token, from its settings in the dashboard) — set it the
+same way:
+
+```sh
+npx wrangler secret put CF_AI_GATEWAY_TOKEN   # once
+```
+
+Until that secret is set, `askJev` falls back to calling TypeSafe directly with
+`TYPESAFE_API_KEY` (see `jevConfig` in `lib/decide.js`), so deploying this is safe before the
+token is in place. Once it is set, `TYPESAFE_API_KEY` is no longer read and the Worker's own copy
+of it can be removed with `npx wrangler secret delete TYPESAFE_API_KEY`.
 
 ## The layout
 

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decide, isShareable } from "../lib/decide.js";
+import { askJev, decide, isShareable, jevConfig } from "../lib/decide.js";
 import { AFFIRMATIVE, NEGATIVE, NON_COMMITTAL, TONE } from "../lib/answers.js";
 
 // Signals with everything quiet; override per case.
@@ -183,4 +183,79 @@ test("a question is shareable unless it contains personal information", () => {
 
 test("personal information does not change the answer", () => {
   assert.deepEqual(run({ personal: 0.99, favorable: 1, certain: 1 }), run({ favorable: 1, certain: 1 }));
+});
+
+test("jevConfig calls TypeSafe directly until the AI Gateway token is set", () => {
+  assert.deepEqual(jevConfig({ TYPESAFE_API_KEY: "direct-key" }), { apiKey: "direct-key" });
+  // Half-configured (e.g. the gateway URL shipped before the secret was set) still falls back.
+  assert.deepEqual(
+    jevConfig({ TYPESAFE_API_KEY: "direct-key", AI_GATEWAY_BASE_URL: "https://gateway.example/typesafe" }),
+    { apiKey: "direct-key" }
+  );
+  assert.deepEqual(
+    jevConfig({ TYPESAFE_API_KEY: "direct-key", CF_AI_GATEWAY_TOKEN: "gw-token" }),
+    { apiKey: "direct-key" }
+  );
+});
+
+test("jevConfig routes through the AI Gateway once both its settings are present, and drops the direct key", () => {
+  const config = jevConfig({
+    TYPESAFE_API_KEY: "direct-key",
+    AI_GATEWAY_BASE_URL: "https://gateway.example/typesafe",
+    CF_AI_GATEWAY_TOKEN: "gw-token",
+  });
+  assert.equal(config.baseURL, "https://gateway.example/typesafe");
+  assert.equal(config.gatewayToken, "gw-token");
+  assert.notEqual(config.apiKey, "direct-key", "the Worker's own TypeSafe key is never sent");
+});
+
+test("askJev sends the request to the configured baseURL with the gateway's own auth header", async () => {
+  const calls = [];
+  const noulAnswers = Object.fromEntries(
+    ["personal", "snarky", "selfDeprecating", "fact", "truth", "favorable", "certain", "hazy", "later", "unwelcome", "unpredictable", "unfocused"]
+      .map((name) => [name, { type: "noul", noul: 0.1 }])
+  );
+  const fakeFetch = async (url, init) => {
+    calls.push({ url, headers: new Headers(init.headers) });
+    return new Response(
+      JSON.stringify({ model: "test", answers: noulAnswers, usage: { input_tokens: 0, output_tokens: 0 } }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+  };
+
+  await askJev("Will this work?", {
+    apiKey: "placeholder",
+    baseURL: "https://gateway.example/typesafe",
+    gatewayToken: "gw-token",
+    fetch: fakeFetch,
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://gateway.example/typesafe/v1/systemone");
+  assert.equal(calls[0].headers.get("cf-aig-authorization"), "gw-token");
+  // The SDK still sends some Authorization header (its placeholder), which the gateway
+  // is the one that replaces with the real, BYOK-stored TypeSafe key.
+  assert.equal(calls[0].headers.get("authorization"), "Bearer placeholder");
+});
+
+test("askJev omits the gateway header when calling TypeSafe directly", async () => {
+  const calls = [];
+  const noulAnswers = Object.fromEntries(
+    ["personal", "snarky", "selfDeprecating", "fact", "truth", "favorable", "certain", "hazy", "later", "unwelcome", "unpredictable", "unfocused"]
+      .map((name) => [name, { type: "noul", noul: 0.1 }])
+  );
+  const fakeFetch = async (url, init) => {
+    calls.push({ url, headers: new Headers(init.headers) });
+    return new Response(
+      JSON.stringify({ model: "test", answers: noulAnswers, usage: { input_tokens: 0, output_tokens: 0 } }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+  };
+
+  await askJev("Will this work?", { apiKey: "direct-key", fetch: fakeFetch });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "https://api.typesafe.ai/v1/systemone");
+  assert.equal(calls[0].headers.get("cf-aig-authorization"), null);
+  assert.equal(calls[0].headers.get("authorization"), "Bearer direct-key");
 });

@@ -12,6 +12,12 @@
     { "pattern": "somewhatmagicaljevball.com", "custom_domain": true },
     { "pattern": "somewhatmagicaljevball.raunaqgupta.com", "custom_domain": true }
   ],
+  "vars": {
+    // Not secret: an account ID and a gateway/provider slug, the same as appear in the
+    // Cloudflare dashboard's URL. The gateway holds the real TypeSafe key as a Bring Your Own
+    // Key; reaching it also needs the CF_AI_GATEWAY_TOKEN secret (see README).
+    "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/0d6eb73be1743ce8fb62139cb54203a4/somewhat-magical-jev-ball/typesafe"
+  },
   "durable_objects": {
     "bindings": [{ "name": "FEED", "class_name": "Feed" }]
   },

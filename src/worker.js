@@ -4,7 +4,7 @@
 // every connected visitor through the Feed Durable Object.
 import { DurableObject } from "cloudflare:workers";
 import { parseClientId } from "../lib/client-id.js";
-import { askJev } from "../lib/decide.js";
+import { askJev, jevConfig } from "../lib/decide.js";
 
 const MAX_QUESTION_LENGTH = 280;
 const MAX_BODY_BYTES = 4096;
@@ -89,7 +89,7 @@ async function handleAsk(request, env, ctx) {
   }
 
   try {
-    const { answer, category, shareable } = await askJev(question, env.TYPESAFE_API_KEY);
+    const { answer, category, shareable } = await askJev(question, jevConfig(env));
     // Show the question to other visitors, unless it contains personal information.
     if (shareable) ctx.waitUntil(feed(env).publish(question.replace(/\s+/g, " "), askedBy));
     return json(200, { answer, category });
