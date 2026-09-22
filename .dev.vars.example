@@ -1,8 +1,6 @@
 # Local secrets for `npm start` (wrangler dev). Copy to .dev.vars and fill in.
 
-# Only needed until CF_AI_GATEWAY_TOKEN is set: TypeSafe's own key, for calling it directly.
+# Only used as a fallback, when the AI binding isn't available: TypeSafe's own key, for
+# calling it directly. Not needed for normal local dev, since the AI binding works remotely
+# even in `wrangler dev` (see README's "Calling Jev").
 TYPESAFE_API_KEY=
-
-# The AI Gateway's own auth (cf-aig-authorization), separate from the TypeSafe key it holds as
-# a Bring Your Own Key. Once this is set, calls go through the gateway instead.
-CF_AI_GATEWAY_TOKEN=

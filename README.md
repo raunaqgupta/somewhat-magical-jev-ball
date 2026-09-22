@@ -9,7 +9,7 @@ Live at https://somewhatmagicaljevball.com
 
 ```sh
 npm install
-cp .dev.vars.example .dev.vars   # then add your TYPESAFE_API_KEY
+cp .dev.vars.example .dev.vars   # only needed as a fallback; see "Calling Jev" below
 npm start                        # wrangler dev, http://localhost:3210
 npm test
 ```
@@ -17,31 +17,33 @@ npm test
 ## Deploy
 
 `public/` is served as static assets and `src/worker.js` handles `/api/ask`
-(`wrangler.jsonc`). The custom domains and a rate limit of 20 requests per minute per IP
-are configured there.
+(`wrangler.jsonc`). The custom domains, the `AI` binding, and a rate limit of 20 requests per
+minute per IP are configured there.
 
 ```sh
 npx wrangler login
-npx wrangler secret put TYPESAFE_API_KEY   # once, until the AI Gateway token is set (see below)
 npm run deploy
 ```
 
-### Calling TypeSafe through Cloudflare AI Gateway
+### Calling Jev
 
-TypeSafe is called through an AI Gateway (`somewhat-magical-jev-ball`, `wrangler.jsonc`'s
-`AI_GATEWAY_BASE_URL`), which holds the real TypeSafe key itself as a Bring Your Own Key, so the
-Worker never has to. Reaching the gateway needs its own auth, the `CF_AI_GATEWAY_TOKEN` secret
-(the gateway's `cf-aig-authorization` token, from its settings in the dashboard) — set it the
-same way:
+Jev is called as `typesafe/jev`, a model in [Workers AI's own catalog](https://developers.cloudflare.com/ai/models/typesafe/jev/),
+through the `AI` binding (`env.AI.run(...)`, `wrangler.jsonc`'s `"ai": { "binding": "AI" }`),
+routed through the `somewhat-magical-jev-ball` AI Gateway (`GATEWAY_ID` in `lib/decide.js`) so
+its usage is logged there. Cloudflare bills this against the TypeSafe key added to that gateway
+as a Bring Your Own Key — the Worker never holds a TypeSafe key of its own, and no secret needs
+setting up to deploy.
 
-```sh
-npx wrangler secret put CF_AI_GATEWAY_TOKEN   # once
-```
+(Cloudflare's separate AI Gateway *Universal Endpoint* BYOK — a raw HTTPS call to
+`gateway.ai.cloudflare.com/v1/{account}/{gateway}/{provider}/...` — only proxies to
+[a fixed list of providers](https://developers.cloudflare.com/ai-gateway/providers/) that
+doesn't include TypeSafe; that was tried first and doesn't work. `typesafe/jev` in the Workers AI
+catalog is a different, separate integration, and the one this app actually uses.)
 
-Until that secret is set, `askJev` falls back to calling TypeSafe directly with
-`TYPESAFE_API_KEY` (see `jevConfig` in `lib/decide.js`), so deploying this is safe before the
-token is in place. Once it is set, `TYPESAFE_API_KEY` is no longer read and the Worker's own copy
-of it can be removed with `npx wrangler secret delete TYPESAFE_API_KEY`.
+`askJev`'s `jevConfig` (`lib/decide.js`) falls back to calling TypeSafe directly with a
+`TYPESAFE_API_KEY` secret when the `AI` binding isn't available (older `wrangler`, or a plain
+Node environment) — set one with `npx wrangler secret put TYPESAFE_API_KEY` and copy it into
+`.dev.vars` locally if that fallback is ever needed.
 
 ## The layout
 

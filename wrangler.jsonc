@@ -12,13 +12,11 @@
     { "pattern": "somewhatmagicaljevball.com", "custom_domain": true },
     { "pattern": "somewhatmagicaljevball.raunaqgupta.com", "custom_domain": true }
   ],
-  // "AI_GATEWAY_BASE_URL" is unset for now: the gateway rejected "typesafe" as the provider
-  // segment ("400 Invalid provider"), so jevConfig (lib/decide.js) falls back to calling
-  // TypeSafe directly until the correct provider slug is confirmed. See issue #37.
-  //
-  // "vars": {
-  //   "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/0d6eb73be1743ce8fb62139cb54203a4/somewhat-magical-jev-ball/typesafe"
-  // },
+  // Jev is a model in Workers AI's own catalog ("typesafe/jev"), called through this binding
+  // (see lib/decide.js's askJev) rather than TypeSafe's API directly. Cloudflare's own
+  // AI Gateway BYOK doesn't cover TypeSafe: it only proxies a fixed list of providers that
+  // doesn't include it (confirmed against api.cloudflare.com's docs, see issue #37).
+  "ai": { "binding": "AI" },
   "durable_objects": {
     "bindings": [{ "name": "FEED", "class_name": "Feed" }]
   },

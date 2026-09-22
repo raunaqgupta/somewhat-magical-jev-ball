@@ -185,77 +185,42 @@ test("personal information does not change the answer", () => {
   assert.deepEqual(run({ personal: 0.99, favorable: 1, certain: 1 }), run({ favorable: 1, certain: 1 }));
 });
 
-test("jevConfig calls TypeSafe directly until the AI Gateway token is set", () => {
+test("jevConfig uses the AI binding when it's available, and TypeSafe's own key otherwise", () => {
+  const fakeAI = { run: async () => {} };
+  assert.deepEqual(jevConfig({ AI: fakeAI, TYPESAFE_API_KEY: "direct-key" }), { ai: fakeAI });
   assert.deepEqual(jevConfig({ TYPESAFE_API_KEY: "direct-key" }), { apiKey: "direct-key" });
-  // Half-configured (e.g. the gateway URL shipped before the secret was set) still falls back.
-  assert.deepEqual(
-    jevConfig({ TYPESAFE_API_KEY: "direct-key", AI_GATEWAY_BASE_URL: "https://gateway.example/typesafe" }),
-    { apiKey: "direct-key" }
-  );
-  assert.deepEqual(
-    jevConfig({ TYPESAFE_API_KEY: "direct-key", CF_AI_GATEWAY_TOKEN: "gw-token" }),
-    { apiKey: "direct-key" }
-  );
 });
 
-test("jevConfig routes through the AI Gateway once both its settings are present, and drops the direct key", () => {
-  const config = jevConfig({
-    TYPESAFE_API_KEY: "direct-key",
-    AI_GATEWAY_BASE_URL: "https://gateway.example/typesafe",
-    CF_AI_GATEWAY_TOKEN: "gw-token",
-  });
-  assert.equal(config.baseURL, "https://gateway.example/typesafe");
-  assert.equal(config.gatewayToken, "gw-token");
-  assert.notEqual(config.apiKey, "direct-key", "the Worker's own TypeSafe key is never sent");
-});
+const noulAnswers = Object.fromEntries(
+  ["personal", "snarky", "selfDeprecating", "fact", "truth", "favorable", "certain", "hazy", "later", "unwelcome", "unpredictable", "unfocused"]
+    .map((name) => [name, { type: "noul", noul: 0.1 }])
+);
+const fakeResult = { model: "test", answers: noulAnswers, usage: { input_tokens: 0, output_tokens: 0 } };
+// The AI binding wraps a model's own result: { state, result, gatewayMetadata }.
+const fakeAIRun = { state: "Completed", result: fakeResult, gatewayMetadata: { keySource: "BYOK" } };
 
-test("askJev sends the request to the configured baseURL with the gateway's own auth header", async () => {
+test("askJev calls Workers AI's typesafe/jev model, routed through the named gateway, when the AI binding is given", async () => {
   const calls = [];
-  const noulAnswers = Object.fromEntries(
-    ["personal", "snarky", "selfDeprecating", "fact", "truth", "favorable", "certain", "hazy", "later", "unwelcome", "unpredictable", "unfocused"]
-      .map((name) => [name, { type: "noul", noul: 0.1 }])
-  );
-  const fakeFetch = async (url, init) => {
-    calls.push({ url, headers: new Headers(init.headers) });
-    return new Response(
-      JSON.stringify({ model: "test", answers: noulAnswers, usage: { input_tokens: 0, output_tokens: 0 } }),
-      { status: 200, headers: { "content-type": "application/json" } }
-    );
-  };
+  const ai = { run: async (model, input, options) => (calls.push({ model, input, options }), fakeAIRun) };
 
-  await askJev("Will this work?", {
-    apiKey: "placeholder",
-    baseURL: "https://gateway.example/typesafe",
-    gatewayToken: "gw-token",
-    fetch: fakeFetch,
-  });
+  await askJev("Will this work?", { ai });
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://gateway.example/typesafe/v1/systemone");
-  assert.equal(calls[0].headers.get("cf-aig-authorization"), "gw-token");
-  // The SDK still sends some Authorization header (its placeholder), which the gateway
-  // is the one that replaces with the real, BYOK-stored TypeSafe key.
-  assert.equal(calls[0].headers.get("authorization"), "Bearer placeholder");
+  assert.equal(calls[0].model, "typesafe/jev");
+  assert.deepEqual(calls[0].input.state, { question: "Will this work?" });
+  assert.equal(calls[0].options.gateway.id, "somewhat-magical-jev-ball");
 });
 
-test("askJev omits the gateway header when calling TypeSafe directly", async () => {
+test("askJev calls TypeSafe directly, with its own key, when no AI binding is given", async () => {
   const calls = [];
-  const noulAnswers = Object.fromEntries(
-    ["personal", "snarky", "selfDeprecating", "fact", "truth", "favorable", "certain", "hazy", "later", "unwelcome", "unpredictable", "unfocused"]
-      .map((name) => [name, { type: "noul", noul: 0.1 }])
-  );
   const fakeFetch = async (url, init) => {
     calls.push({ url, headers: new Headers(init.headers) });
-    return new Response(
-      JSON.stringify({ model: "test", answers: noulAnswers, usage: { input_tokens: 0, output_tokens: 0 } }),
-      { status: 200, headers: { "content-type": "application/json" } }
-    );
+    return new Response(JSON.stringify(fakeResult), { status: 200, headers: { "content-type": "application/json" } });
   };
 
   await askJev("Will this work?", { apiKey: "direct-key", fetch: fakeFetch });
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, "https://api.typesafe.ai/v1/systemone");
-  assert.equal(calls[0].headers.get("cf-aig-authorization"), null);
   assert.equal(calls[0].headers.get("authorization"), "Bearer direct-key");
 });
