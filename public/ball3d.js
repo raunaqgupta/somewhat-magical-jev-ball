@@ -21,12 +21,19 @@ import {
 import { paintBack, paintFront } from "./face-texture.js";
 
 const BALL_SIZE = 273; // the design's ball on a desktop; a phone's is smaller (see style.css)
-const WINDOW_SIZE = 149; // the design's window, the same size on every ball
-// Each face is a cap of the sphere as wide as the design's 149px window.
+const WINDOW_SIZE = 149; // the design's window on the desktop ball (frame 7B-0)
+const PHONE_WINDOW_SIZE = 96; // the design's window on the phone's 179px ball (frame 36-0)
+// Each face is a cap of the sphere as wide as the design's window on that ball.
 const FACE_RADIUS = WINDOW_SIZE / BALL_SIZE; // as a fraction of the ball's radius
 
-/** The share of a ball's radius that its 149px window covers, for a ball `size` px across. */
-export const faceRadiusFor = (size) => WINDOW_SIZE / size;
+/**
+ * The share of a ball's radius that its window covers, for a ball `size` px across.
+ * The window is the design's 149px on the desktop ball and 96px on the phone's (the
+ * only two sizes the stylesheets produce); `windowSize` defaults to the desktop's.
+ */
+export const faceRadiusFor = (size, windowSize = WINDOW_SIZE) => windowSize / size;
+/** The design's window for a ball `size` px across: 96px on a phone's smaller ball. */
+export const windowSizeFor = (size) => (size < BALL_SIZE ? PHONE_WINDOW_SIZE : WINDOW_SIZE);
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
 // The two lights from three.js's own webgl_effects_ascii example (mrdoob/three.js,
@@ -201,8 +208,8 @@ function faceTexture(paint, text, renderer) {
   texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return {
     texture,
-    repaint(newText = text) {
-      paint(canvas.getContext("2d"), TEXTURE_SIZE, newText);
+    repaint(newText = text, windowPx = WINDOW_SIZE) {
+      paint(canvas.getContext("2d"), TEXTURE_SIZE, newText, windowPx);
       texture.needsUpdate = true;
     },
   };
@@ -238,13 +245,19 @@ export function createBall(ball, answerEl, onLost = () => {}) {
 
   const front = faceTexture(paintFront, answerEl.textContent, renderer);
   const back = faceTexture(paintBack, BACK_TEXT, renderer);
+  const sizeThen = sizeNow();
+  const windowThen = windowSizeFor(sizeThen);
   const {
     scene,
     camera,
     ball: model,
     front: frontMesh,
     back: backMesh,
-  } = buildScene({ frontMap: front.texture, backMap: back.texture, faceRadius: faceRadiusFor(sizeNow()) });
+  } = buildScene({
+    frontMap: front.texture,
+    backMap: back.texture,
+    faceRadius: faceRadiusFor(sizeThen, windowThen),
+  });
 
   let queued = false;
   const render = () => {
@@ -258,8 +271,8 @@ export function createBall(ball, answerEl, onLost = () => {}) {
     }
   };
 
-  front.repaint(answerEl.textContent);
-  back.repaint();
+  front.repaint(answerEl.textContent, windowThen);
+  back.repaint(BACK_TEXT, windowThen);
 
   // The answer is real text in the page; redraw the front whenever it changes.
   const watcher = new MutationObserver(() => {
@@ -269,18 +282,22 @@ export function createBall(ball, answerEl, onLost = () => {}) {
   watcher.observe(answerEl, { childList: true, characterData: true, subtree: true });
 
   // When the ball is resized (the window crosses into or out of the phone layout), redraw
-  // at its new size, with the faces still covering 149px.
-  let size = sizeNow();
+  // at its new size, with the faces still covering the design's window for that size —
+  // 149px on the desktop ball, 96px on the phone's — and the textures repainted for it.
+  let size = sizeThen;
   const resizer =
     typeof ResizeObserver === "function"
       ? new ResizeObserver(() => {
           if (sizeNow() === size) return;
           size = sizeNow();
+          const windowPx = windowSizeFor(size);
           renderer.setSize(size, size, false);
           for (const [mesh, side] of [[frontMesh, 1], [backMesh, -1]]) {
             mesh.geometry.dispose();
-            mesh.geometry = faceGeometry(side, faceRadiusFor(size));
+            mesh.geometry = faceGeometry(side, faceRadiusFor(size, windowPx));
           }
+          front.repaint(answerEl.textContent, windowPx);
+          back.repaint(BACK_TEXT, windowPx);
           requestRender();
         })
       : null;

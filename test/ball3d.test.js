@@ -174,17 +174,19 @@ test("each face is a cap of the sphere as wide as the design's 149px window, on 
   }
 });
 
-test("on a smaller ball the window is still 149px, so its cap covers more of the sphere", () => {
-  // The phone design's ball is 230px across, with the same 149px window in it.
+test("on the phone's 179px ball the window is the design's 96px, a shade under the desktop's share", () => {
+  // The desktop ball is 273px with the design's 149px window; the phone frame's (36-0) is
+  // 179px with a 96px window.
   assert.equal(faceRadiusFor(273), 149 / 273);
-  const radius = faceRadiusFor(230);
-  assert.ok(radius > faceRadiusFor(273));
+  assert.equal(faceRadiusFor(179, 96), 96 / 179);
+  const radius = faceRadiusFor(179, 96);
+  assert.ok(radius < faceRadiusFor(273));
   for (const side of [1, -1]) {
     const geometry = faceGeometry(side, radius);
     geometry.computeBoundingBox();
     const { min, max } = geometry.boundingBox;
-    near((max.x - min.x) * (230 / 2), 149, 0.5);
-    near((max.y - min.y) * (230 / 2), 149, 0.5);
+    near((max.x - min.x) * (179 / 2), 96, 0.5);
+    near((max.y - min.y) * (179 / 2), 96, 0.5);
   }
   // The texture still spans the face exactly, whatever its size.
   const uv = faceGeometry(1, radius).attributes.uv;
@@ -199,7 +201,7 @@ test("on a smaller ball the window is still 149px, so its cap covers more of the
   const { front, back } = buildScene({ faceRadius: radius });
   for (const mesh of [front, back]) {
     mesh.geometry.computeBoundingBox();
-    near((mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x) * (230 / 2), 149, 0.5);
+    near((mesh.geometry.boundingBox.max.x - mesh.geometry.boundingBox.min.x) * (179 / 2), 96, 0.5);
   }
 });
 

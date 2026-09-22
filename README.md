@@ -45,21 +45,33 @@ catalog is a different, separate integration, and the one this app actually uses
 
 ## The layout
 
-The page follows the Paper designs for a desktop (1280px wide) and a phone (370px wide). On a
-desktop it is a CSS grid of three columns (`1fr 420px 1fr`) and five rows (`1fr 63px 346px 118px 1fr`).
+The page follows the Paper designs for a desktop (1280px wide, frame 7B-0) and a phone (370px wide,
+frame 36-0). On a desktop it is a CSS grid of three columns (`1fr 421px 1fr`, the middle column's
+two box lines included) and five rows (`1fr 71px 346px 118px 1fr`).
 The title "Somewhat Magical Jev Ball" (`<header class="site-header">` with the page's `<h1>`), the ball
-and the question box are the three cells of the middle column, each with 36px of padding, and the empty
-outer rows and columns take up what is left, so the stack is centred on the page. Faint lines (`#f4f4f4`)
-run between the cells across the whole page, and the middle column's box is drawn in `#cccccc`. The cells
-draw these lines themselves (their top edges, run out to both sides, and the column's sides), so there
-are no extra elements for them.
+and the question box are the three cells of the middle column, and the empty
+outer rows and columns take up what is left, so the stack is centred on the page. The ball's and
+question box's cells have 36px of padding; the title sits 20px from its cell's top and 16px from its
+bottom. On a desktop the three cells sit on a `#fcfcfc` fill.
+
+The lines are drawn by the cells themselves (their top edges, run out to both sides, and the column's
+sides), so there are no extra elements for them. On a desktop they are dashed `#eeeeee` across the
+page, and where they cross the middle column's box they are redrawn solid: the box's sides, the
+title row's top edge and the question box's bottom edge are the darker `#aaaaaa` frame, and the
+ball's and question box's top edges are `#eeeeee`. On a phone the lines stay solid and pale
+(`#f4f4f4` across the page, the box in `#cccccc`) on clear, white cells, as its frame has it.
 
 On a phone (600px wide or less) it is the same grid with different sizes: the ball is 179px instead of
 273px, the cells have 16px at the sides, and the middle column is as wide as the title (about 300px)
-instead of 420px, with the empty columns taking the rest. The rows are `1fr 63px 252px 118px 1fr`; the
+instead of 421px, with the empty columns taking the rest. The rows are `1fr 63px 252px 118px 1fr`; the
 title's row grows if the title has to wrap, which it only does on phones narrower than the title (about
-300px). The window in the ball is 149px on both. The ball's window is nearly flat dark grey (`#474747`
-at 29% over black, blurred so wide that it covers the window evenly), as in the design.
+300px). The title is 24px Ballet on a 34px line on a desktop and on a 30px line on a phone.
+
+The window in the ball is the design's 149px on the desktop ball and 96px on the phone's (frame 36-0
+draws it 96×95; the page takes it as a 96px circle). The ball's window is nearly flat dark grey
+(`#474747` at 29% over black, blurred so wide that it covers the window evenly), as in the design — on
+the phone's smaller window the same shadow covers it outright, which lands within 1/255 of the same
+grey.
 
 The lines run out 100vw past their cells, so `html` and `body` are set so that the body clips them
 (`overflow-x: clip` only works on the body if the page's own overflow is not `visible`); otherwise the
@@ -77,10 +89,14 @@ The answer window stays a DOM element on top of the canvas so the text is real t
 ball shakes with a CSS animation when you ask. If WebGL is unavailable the flat CSS ball is used instead,
 with a subtle radial highlight of its own so it still reads as round rather than a flat disc.
 
-It is lit by a dim ambient fill plus a directional key light sitting close to the camera's axis, so
-whichever face (front or back) is turned to the viewer stays close to fully lit and legible, while the
-sphere still shades toward its edge and the glossy finish catches a highlight — giving it a genuine 3D
-look rather than the flat, evenly-lit look a single ambient light gives.
+The sphere is low-poly and flat-shaded, in `MeshPhongMaterial`, lit by two point lights taken from
+three.js's own `webgl_effects_ascii` example — a brighter one and a dimmer fill in opposite corners —
+so the faceted sphere shades toward its edge and catches a broad, faint highlight. Each channel of the
+render is quantized to a handful of levels through a visible ordered (Bayer) dither, the classic
+stippled, retro look, and the whole thing is tone-mapped with ACES so the highlights roll off softly
+instead of clipping to white. The two faces are caps of the same sphere, as wide as the design's
+window on that ball (149px of the desktop's 273px ball, 96px of the phone's 179px one), drawn from the
+same measurements (`public/face-texture.js`).
 
 three.js is bundled down to just the classes used (`src/three-entry.js`) into `public/vendor/three.js`,
 which is committed, so there is no build step to run the app. After changing the entry or upgrading
@@ -92,8 +108,8 @@ The ball has a front and a back (Paper designs "front" and the ball's back). The
 window with the answer; the back is a white window reading `jev 1.13`, the model version.
 
 The ball is a 3D model (`public/ball3d.js`): a sphere with both faces on it as part of the
-model, all lit by a single ambient light (so each face shows in its own colours from whichever way
-it is turned, with no shading or highlights), so they turn with it and **text goes upside down when the ball is flipped over**, as a label
+model, lit by the scene's two point lights and finished like the sphere itself (flat-shaded,
+dithered), so they turn with it and **text goes upside down when the ball is flipped over**, as a label
 on a real ball would. The faces are drawn from the same measurements as the designs
 (`public/face-texture.js`). The answer stays real text in the page for screen readers, and the front
 face is redrawn from it whenever it changes.

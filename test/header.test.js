@@ -46,11 +46,17 @@ test("the header is the title cell of the page's grid, not a tab on the edge", (
   assert.match(rule(".ask-cell"), /justify-content:\s*center/);
 });
 
-test("the title is 24px Ballet on a 30px line, falling back to the system font", () => {
+test("the title is 24px Ballet on the design's 34px line (30px on a phone), falling back to the system font", () => {
   const title = rule(".site-title");
-  assert.match(title, /font:\s*400 24px\/30px "Ballet", system-ui, sans-serif/);
+  assert.match(title, /font:\s*400 24px\/34px "Ballet", system-ui, sans-serif/);
   assert.match(title, /color:\s*var\(--title\)/);
   assert.match(css, /--title:\s*#696969/i);
+  // The phone frame's title keeps the old 30px line.
+  const phoneStart = css.indexOf("@media (max-width: 600px)");
+  const phoneCss = css.slice(phoneStart, css.indexOf("\n}\n", phoneStart));
+  const phoneTitle = /(?:^|[\s,])\.site-title\s*\{([^}]*)\}/gm.exec(phoneCss);
+  assert.ok(phoneTitle, "a phone rule for .site-title");
+  assert.match(phoneTitle[1], /line-height:\s*30px/);
 });
 
 test("Ballet is served from this site, as a real WOFF2 file, preloaded", () => {

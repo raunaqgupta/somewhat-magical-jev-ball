@@ -5,9 +5,14 @@
   --input-border: #aaaaaa;
   --muted: #666666;
   --title: #696969;
-  /* The grid's lines: faint across the page, darker round the centre column's box. */
-  --line: #f4f4f4;
-  --frame: #cccccc;
+  /* The grid's lines, from the desktop frame (7B-0): across the page they are #EEEEEE and
+     dashed; the middle column's box is drawn over them, solid and darker (#AAAAAA), and the
+     box's three cells sit on a #FCFCFC fill. The phone frame (36-0) keeps the paler solid
+     lines on white cells; the media query below resets these four. */
+  --line: #eeeeee;
+  --line-style: dashed;
+  --frame: #aaaaaa;
+  --cell: #fcfcfc;
   --window-text: #aaaaaa;
   --window-glow: #4747474a;
   --font: system-ui, sans-serif;
@@ -45,8 +50,10 @@ body {
   min-height: 100%;
   margin: 0;
   display: grid;
-  grid-template-columns: 1fr 420px 1fr;
-  grid-template-rows: 1fr 63px 346px 118px 1fr;
+  /* The desktop frame's column and rows: a 421px middle column (its two 1px box lines
+     included), the title's 71px row, the ball's 346px and the question box's 118px. */
+  grid-template-columns: 1fr 421px 1fr;
+  grid-template-rows: 1fr 71px 346px 118px 1fr;
   /* The lines run out 100vw past their cells; none of that should make the page scroll. */
   overflow-x: clip;
   background: var(--bg);
@@ -59,7 +66,7 @@ body {
 body::before {
   content: "";
   grid-area: 1 / 2 / -1 / 3;
-  border-inline: 1px solid var(--line);
+  border-inline: 1px var(--line-style) var(--line);
   z-index: -1;
 }
 
@@ -73,7 +80,7 @@ body::before {
   top: -1px;
   left: -100vw;
   right: -100vw;
-  border-top: 1px solid var(--line);
+  border-top: 1px var(--line-style) var(--line);
   z-index: -1;
 }
 
@@ -83,7 +90,8 @@ body::before {
   bottom: -1px;
 }
 
-/* The three cells of the middle column: the box they draw together is the darker line. */
+/* The three cells of the middle column: the box they draw together is the darker line,
+   and on a desktop they sit on the design's #FCFCFC fill (the phone's cells are clear). */
 .site-header,
 .ball-cell,
 .ask-cell {
@@ -91,6 +99,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--cell);
   border: solid var(--frame);
   border-width: 0 1px;
 }
@@ -98,14 +107,18 @@ body::before {
 .site-header {
   grid-area: 2 / 2;
   flex-direction: column;
-  padding: 16px 36px;
+  /* 20px above the title and 16px below it, on the design's 71px row (its 1px top line
+     included). */
+  padding: 20px 36px 16px;
   border-top-width: 1px;
 }
 
 .site-title {
   margin: 0;
   color: var(--title);
-  font: 400 24px/30px "Ballet", system-ui, sans-serif;
+  /* 24px Ballet on a 34px line, the desktop frame's title; the phone's sits on a 30px
+     line (see the media query). */
+  font: 400 24px/34px "Ballet", system-ui, sans-serif;
   white-space: nowrap;
 }
 
@@ -192,7 +205,8 @@ body::before {
    back is on the far side and hidden until the ball is rotated (see ball-rotate.js). */
 .window {
   position: absolute;
-  /* 149px wide, in the middle of the ball whatever its size. */
+  /* The design's 149px window, centred in the ball (a phone's is 96px: see the media
+     query). */
   top: calc(50% - 74.5px);
   left: calc(50% - 74.5px);
   width: 149px;
@@ -328,7 +342,8 @@ body::before {
 }
 
 .ask input::placeholder {
-  color: var(--muted);
+  /* The design's placeholder is the same #AAAAAA as the window's text. */
+  color: var(--window-text);
 }
 
 .ask button {
@@ -383,11 +398,18 @@ body::before {
 /* The phone design: the same grid with a smaller ball and 16px at the sides of the cells. The
    middle column is as wide as the title (about 300px), and the empty columns take the rest,
    so the box has a strip of the page's lines on either side of it. The title's row grows
-   if the title has to wrap on a very narrow phone. */
+   if the title has to wrap on a very narrow phone. The phone frame keeps the paler, solid
+   lines on clear cells, and its window is the design's 96px (36-0), not the desktop's 149px. */
 @media (max-width: 600px) {
   body {
+    /* The question box's row is still 118px: the design books its bottom line to the row
+       below (117px plus the 1px), which here is drawn by the cell itself. */
     grid-template-columns: 1fr minmax(0, max-content) 1fr;
     grid-template-rows: 1fr minmax(63px, auto) 252px 118px 1fr;
+    --line: #f4f4f4;
+    --line-style: solid;
+    --frame: #cccccc;
+    --cell: transparent;
   }
 
   .site-header {
@@ -403,11 +425,27 @@ body::before {
     text-align: center;
     text-wrap: balance;
     white-space: normal;
+    line-height: 30px;
   }
 
   .ball {
+    /* The phone frame's ball (36-0). */
     width: 179px;
     height: 179px;
+  }
+
+  .window {
+    /* The phone frame's window: 96px across (drawn 96×95 in the design, taken as a
+       circle), against the desktop's 149px. */
+    top: calc(50% - 48px);
+    left: calc(50% - 48px);
+    width: 96px;
+    height: 96px;
+  }
+
+  .answer {
+    /* The desktop's 100px wrap, scaled to the smaller window (96px of 149px). */
+    max-width: 64px;
   }
 }
 
