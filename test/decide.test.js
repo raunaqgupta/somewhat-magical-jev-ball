@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { askJev, decide, isShareable, jevConfig } from "../lib/decide.js";
+import { askJev, decide, isShareable } from "../lib/decide.js";
 import { AFFIRMATIVE, NEGATIVE, NON_COMMITTAL, TONE } from "../lib/answers.js";
 
 // Signals with everything quiet; override per case.
@@ -185,12 +185,6 @@ test("personal information does not change the answer", () => {
   assert.deepEqual(run({ personal: 0.99, favorable: 1, certain: 1 }), run({ favorable: 1, certain: 1 }));
 });
 
-test("jevConfig uses the AI binding when it's available, and TypeSafe's own key otherwise", () => {
-  const fakeAI = { run: async () => {} };
-  assert.deepEqual(jevConfig({ AI: fakeAI, TYPESAFE_API_KEY: "direct-key" }), { ai: fakeAI });
-  assert.deepEqual(jevConfig({ TYPESAFE_API_KEY: "direct-key" }), { apiKey: "direct-key" });
-});
-
 const noulAnswers = Object.fromEntries(
   ["personal", "snarky", "selfDeprecating", "fact", "truth", "favorable", "certain", "hazy", "later", "unwelcome", "unpredictable", "unfocused"]
     .map((name) => [name, { type: "noul", noul: 0.1 }])
@@ -199,11 +193,11 @@ const fakeResult = { model: "test", answers: noulAnswers, usage: { input_tokens:
 // The AI binding wraps a model's own result: { state, result, gatewayMetadata }.
 const fakeAIRun = { state: "Completed", result: fakeResult, gatewayMetadata: { keySource: "BYOK" } };
 
-test("askJev calls Workers AI's typesafe/jev model, routed through the named gateway, when the AI binding is given", async () => {
+test("askJev calls Workers AI's typesafe/jev model, routed through the named gateway", async () => {
   const calls = [];
   const ai = { run: async (model, input, options) => (calls.push({ model, input, options }), fakeAIRun) };
 
-  await askJev("Will this work?", { ai });
+  await askJev("Will this work?", ai);
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].model, "typesafe/jev");
@@ -211,16 +205,8 @@ test("askJev calls Workers AI's typesafe/jev model, routed through the named gat
   assert.equal(calls[0].options.gateway.id, "somewhat-magical-jev-ball");
 });
 
-test("askJev calls TypeSafe directly, with its own key, when no AI binding is given", async () => {
-  const calls = [];
-  const fakeFetch = async (url, init) => {
-    calls.push({ url, headers: new Headers(init.headers) });
-    return new Response(JSON.stringify(fakeResult), { status: 200, headers: { "content-type": "application/json" } });
-  };
-
-  await askJev("Will this work?", { apiKey: "direct-key", fetch: fakeFetch });
-
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, "https://api.typesafe.ai/v1/systemone");
-  assert.equal(calls[0].headers.get("authorization"), "Bearer direct-key");
+test("askJev reads answers out of the binding's { state, result } wrapper, not the top level", async () => {
+  const ai = { run: async () => fakeAIRun };
+  const { signals } = await askJev("Will this work?", ai);
+  assert.equal(signals.hazy, 0.1);
 });

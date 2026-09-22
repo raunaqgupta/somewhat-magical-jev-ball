@@ -1,6 +1,0 @@
-# Local secrets for `npm start` (wrangler dev). Copy to .dev.vars and fill in.
-
-# Only used as a fallback, when the AI binding isn't available: TypeSafe's own key, for
-# calling it directly. Not needed for normal local dev, since the AI binding works remotely
-# even in `wrangler dev` (see README's "Calling Jev").
-TYPESAFE_API_KEY=

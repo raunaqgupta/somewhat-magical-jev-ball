@@ -1,10 +1,10 @@
 // Cloudflare Worker: static files from ./public are served by the assets
-// binding; only /api/* reaches this code. It proxies questions to Jev so the
-// TypeSafe API key stays server-side, and relays each shareable question to
-// every connected visitor through the Feed Durable Object.
+// binding; only /api/* reaches this code. It asks Jev through the AI binding (no TypeSafe
+// key of the Worker's own to keep server-side) and relays each shareable question to every
+// connected visitor through the Feed Durable Object.
 import { DurableObject } from "cloudflare:workers";
 import { parseClientId } from "../lib/client-id.js";
-import { askJev, jevConfig } from "../lib/decide.js";
+import { askJev } from "../lib/decide.js";
 
 const MAX_QUESTION_LENGTH = 280;
 const MAX_BODY_BYTES = 4096;
@@ -89,7 +89,7 @@ async function handleAsk(request, env, ctx) {
   }
 
   try {
-    const { answer, category, shareable } = await askJev(question, jevConfig(env));
+    const { answer, category, shareable } = await askJev(question, env.AI);
     // Show the question to other visitors, unless it contains personal information.
     if (shareable) ctx.waitUntil(feed(env).publish(question.replace(/\s+/g, " "), askedBy));
     return json(200, { answer, category });
