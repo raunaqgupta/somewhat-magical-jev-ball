@@ -2,7 +2,6 @@
 // by `npm run vendor:three` so the page needs no CDN and ships a small file.
 export {
   ACESFilmicToneMapping,
-  AmbientLight,
   CanvasTexture,
   DirectionalLight,
   Group,
