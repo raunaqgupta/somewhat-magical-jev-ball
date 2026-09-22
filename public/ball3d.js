@@ -96,12 +96,17 @@ const int ditherMatrix8x8[64] = int[](
 // Distinct shades per colour channel to dither between. Low enough to read as a clearly
 // stippled, retro look rather than a smooth gradient.
 const float ditherLevels = 4.0;
+// Screen pixels each matrix cell covers, on a side: coarser (bigger, chunkier dots) at a
+// higher scale, since the same 8x8 matrix then spans more screen space.
+const float ditherScale = 2.0;
 
-// The matrix, tiled across the screen: which of the 64 steps between one dithered level
-// and the next this pixel rounds to.
+// The matrix, tiled across the screen at ditherScale, so each cell in it covers a
+// ditherScale x ditherScale block of screen pixels: which of the 64 steps between one
+// dithered level and the next this pixel rounds to.
 float ditherThreshold() {
-  int x = int(mod(gl_FragCoord.x, 8.0));
-  int y = int(mod(gl_FragCoord.y, 8.0));
+  vec2 cell = floor(gl_FragCoord.xy / ditherScale);
+  int x = int(mod(cell.x, 8.0));
+  int y = int(mod(cell.y, 8.0));
   return float(ditherMatrix8x8[x + y * 8]) / 64.0;
 }
 `;
