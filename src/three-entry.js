@@ -3,6 +3,7 @@
 export {
   AmbientLight,
   CanvasTexture,
+  DirectionalLight,
   Group,
   Mesh,
   MeshPhysicalMaterial,

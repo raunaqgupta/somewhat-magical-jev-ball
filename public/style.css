@@ -150,7 +150,13 @@ body::before {
   width: 273px;
   height: 273px;
   border-radius: 50%;
-  background: var(--ink);
+  /* A soft highlight, roughly where the 3D ball's own key light sits (ball3d.js's
+     KEY_DIRECTION), plus a light vignette toward the edge, so the flat fallback used when
+     WebGL is unavailable also reads as a lit sphere rather than a flat black disc. */
+  background:
+    radial-gradient(circle at 58% 34%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 55%),
+    radial-gradient(circle at 50% 50%, transparent 62%, rgba(0, 0, 0, 0.35) 100%),
+    var(--ink);
   overflow: clip;
   /* Drag to rotate: keep the browser from scrolling, zooming or selecting instead. */
   cursor: grab;

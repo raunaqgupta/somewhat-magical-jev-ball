@@ -60,57 +60,77 @@ function textureAxes(q, face) {
 
 test("the model is a sphere and its two faces, turned together, seen by an orthographic camera", () => {
   const { scene, camera, ball } = buildScene();
-  assert.deepEqual(scene.children.map((c) => c.type).sort(), ["AmbientLight", "Group"]);
+  assert.deepEqual(scene.children.map((c) => c.type).sort(), ["AmbientLight", "DirectionalLight", "Group"]);
   assert.deepEqual(ball.children.map((c) => c.type), ["Mesh", "Mesh", "Mesh"]);
   assert.equal(camera.type, "OrthographicCamera");
 });
 
-test("there is exactly one light source in the scene, whatever kind it is", () => {
+test("there are exactly two light sources in the scene: an ambient fill and a directional key light", () => {
   const { scene } = buildScene();
   const lights = [];
   scene.traverse((object) => {
     if (object.isLight) lights.push(object);
   });
-  assert.equal(lights.length, 1);
-  assert.equal(lights[0].type, "AmbientLight");
+  assert.deepEqual(lights.map((l) => l.type).sort(), ["AmbientLight", "DirectionalLight"]);
   // No other fill, no lights hiding inside the ball, no environment map.
   assert.equal(scene.environment, null);
   assert.equal(scene.background, null);
 });
 
-test("the light is a white ambient light, strong enough to show a face in its own colours", () => {
-  const { light } = buildScene();
+test("both lights are white, and together are strong enough to show a face in its own colours head-on", () => {
+  const { light, key } = buildScene();
   assert.equal(light.type, "AmbientLight");
   assert.equal(light.color.getHex(), 0xffffff);
-  // three.js divides light on a diffuse surface by pi, so pi is the least that shows a face at its
-  // own colour; the glossy material gives up a little of it, so it is a touch more. Too much would
-  // wash the faces out, so it is held close to pi.
-  assert.ok(light.intensity >= Math.PI, `too dim: ${light.intensity}`);
-  assert.ok(light.intensity <= Math.PI * 1.2, `too bright: ${light.intensity}`);
+  assert.equal(key.type, "DirectionalLight");
+  assert.equal(key.color.getHex(), 0xffffff);
+  // three.js divides light on a diffuse surface by pi, so pi is the least combined intensity, at
+  // normal incidence, that shows a face at its own colour; the glossy material gives up a little
+  // of it, so it is a touch more. Too much would wash the faces out, so it is held close to pi.
+  const headOn = light.intensity + key.intensity; // the key's direction is nearly +z (see below)
+  assert.ok(headOn >= Math.PI * 0.9, `too dim: ${headOn}`);
+  assert.ok(headOn <= Math.PI * 1.2, `too bright: ${headOn}`);
+  // Most of it is the key light, so the sphere still shows real shading, not a flat wash.
+  assert.ok(key.intensity > light.intensity, "the key should outweigh the ambient fill");
 });
 
-test("an ambient light has no direction, so a face is lit the same whichever way the ball is turned", () => {
-  // Nothing in the scene depends on where the light is: it lights every surface evenly.
-  const { light } = buildScene();
+test("the key light sits close to the camera's axis, so whichever face is turned to the viewer stays legible", () => {
+  const { key } = buildScene();
+  assert.equal(key.isDirectionalLight, true);
+  const { x, y, z } = key.position.clone().normalize();
+  // Mostly +z (the camera's direction, and a face's normal when it is turned to the viewer),
+  // with a gentle offset so the sphere still shows a highlight and shades toward its edge.
+  assert.ok(z > 0.85, `too far off-axis to keep a face legible: z=${z}`);
+  assert.ok(Math.hypot(x, y) > 0.1, `too close to dead-on to shade the sphere: x=${x}, y=${y}`);
+});
+
+test("the ambient light has no direction, and is dimmer than the key: it only keeps shadows off pure black", () => {
+  const { light, key } = buildScene();
   assert.equal(light.isAmbientLight, true);
   assert.equal(light.isDirectionalLight, undefined);
-  assert.equal(light.isPointLight, undefined);
-  assert.equal(light.isSpotLight, undefined);
+  assert.ok(light.intensity < key.intensity);
 });
 
-test("the sphere and both faces are lit by it and share one glossy finish, and the faces carry their textures", () => {
+test("the sphere and both faces are lit by the same lights, and the faces carry their textures", () => {
   const maps = { frontMap: { name: "front" }, backMap: { name: "back" } };
   const { sphere, front, back } = buildScene(maps);
   for (const mesh of [sphere, front, back]) {
     // A material lit by lights, not an unlit one that ignores them.
     assert.equal(mesh.material.type, "MeshPhysicalMaterial");
-    assert.equal(mesh.material.roughness, sphere.material.roughness);
-    assert.equal(mesh.material.clearcoat, sphere.material.clearcoat);
-    assert.equal(mesh.material.clearcoatRoughness, sphere.material.clearcoatRoughness);
+    assert.equal(mesh.material.metalness, 0);
   }
   assert.equal(front.material.map, maps.frontMap);
   assert.equal(back.material.map, maps.backMap);
   assert.equal(sphere.material.map, null);
+});
+
+test("only the plain sphere is glossy: the faces are fully matte, so the key light adds no specular glint over the text", () => {
+  const { sphere, front, back } = buildScene();
+  assert.ok(sphere.material.clearcoat > 0, "the sphere should have its highlight");
+  assert.ok(sphere.material.roughness < 1, "and a tight enough one to read as glossy");
+  for (const mesh of [front, back]) {
+    assert.equal(mesh.material.clearcoat ?? 0, 0, "a face should not add its own specular glint over the text");
+    assert.equal(mesh.material.roughness, 1, "fully matte: no specular lobe from the base material either");
+  }
 });
 
 test("the sphere exactly fills the canvas: its extremes land on the canvas edges", () => {
@@ -275,6 +295,7 @@ test("the vendored three.js bundle exports exactly what the ball imports", async
   assert.deepEqual(Object.keys(vendored).sort(), [
     "AmbientLight",
     "CanvasTexture",
+    "DirectionalLight",
     "Group",
     "Mesh",
     "MeshPhysicalMaterial",

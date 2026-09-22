@@ -72,7 +72,13 @@ load, the title shows in the system font.
 
 The ball is a sphere rendered with [three.js](https://threejs.org) (`public/ball3d.js`).
 The answer window stays a DOM element on top of the canvas so the text is real text, and the whole
-ball shakes with a CSS animation when you ask. If WebGL is unavailable the flat CSS ball is used instead.
+ball shakes with a CSS animation when you ask. If WebGL is unavailable the flat CSS ball is used instead,
+with a subtle radial highlight of its own so it still reads as round rather than a flat disc.
+
+It is lit by a dim ambient fill plus a directional key light sitting close to the camera's axis, so
+whichever face (front or back) is turned to the viewer stays close to fully lit and legible, while the
+sphere still shades toward its edge and the glossy finish catches a highlight — giving it a genuine 3D
+look rather than the flat, evenly-lit look a single ambient light gives.
 
 three.js is bundled down to just the classes used (`src/three-entry.js`) into `public/vendor/three.js`,
 which is committed, so there is no build step to run the app. After changing the entry or upgrading
