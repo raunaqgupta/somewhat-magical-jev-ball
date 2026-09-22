@@ -32,8 +32,12 @@ const SURFACE = 1.002;
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
 // The ball sits at the centre of a cube (the ball's own radius is 1, so its diameter is 2;
-// the cube's edge is 3x that, 6, so each vertex sits this far out on every axis).
-const CUBE_HALF_EDGE = 3;
+// the cube's edge is 6x that, 12, so each vertex sits this far out on every axis). These
+// are directional lights, with no distance falloff and a direction fixed by this position
+// only through its own unit vector, so this scales the whole rig up without changing the
+// render at all — the direction (and so VERTEX_INTENSITY, which only depends on it) is
+// exactly the same as at half this distance.
+const CUBE_HALF_EDGE = 6;
 // A directional light at each of the cube's 8 vertices, all aimed at its centre (a
 // light's own default target, where the ball already sits), the same intensity each.
 // three.js divides the light on a diffuse surface by pi, so an intensity of pi at normal
