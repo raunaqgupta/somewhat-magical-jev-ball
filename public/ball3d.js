@@ -72,6 +72,49 @@ export function faceGeometry(side, radius = FACE_RADIUS) {
   return geometry;
 }
 
+// Ordered (Bayer) dithering, from https://alex-charlton.com/posts/Dithering_on_the_GPU/.
+// Breaks up the 8-bit banding an ordinary framebuffer would otherwise show across the
+// sphere's subtle, near-black shading and its soft, spread highlight. Spliced into each
+// material's own shader in place of three.js's own dithering (a different, noise-based
+// technique) — at the same point it would have gone: after tone mapping and colour space
+// conversion, just before the colour is quantized to 8 bits.
+const DITHER_DECLARATIONS = `
+const int ditherMatrix8x8[64] = int[](
+   0, 32,  8, 40,  2, 34, 10, 42,
+  48, 16, 56, 24, 50, 18, 58, 26,
+  12, 44,  4, 36, 14, 46,  6, 38,
+  60, 28, 52, 20, 62, 30, 54, 22,
+   3, 35, 11, 43,  1, 33,  9, 41,
+  51, 19, 59, 27, 49, 17, 57, 25,
+  15, 47,  7, 39, 13, 45,  5, 37,
+  63, 31, 55, 23, 61, 29, 53, 21
+);
+
+// The matrix, tiled across the screen: which of the 64 steps between one 8-bit colour
+// level and the next this pixel rounds to.
+float ditherThreshold() {
+  int x = int(mod(gl_FragCoord.x, 8.0));
+  int y = int(mod(gl_FragCoord.y, 8.0));
+  return float(ditherMatrix8x8[x + y * 8]) / 64.0;
+}
+`;
+// Quantizing to 8 bits the ordinary way (round to the nearest level) always rounds the
+// same way for a given colour, so a whole run of pixels a smooth gradient barely moves
+// across can share one level: a visible band. Adding the threshold before flooring instead
+// means each pixel's own place in the matrix decides whether it rounds up or down, so nearby
+// pixels at the same true colour differ, and the levels appear to blend into one another.
+const DITHER_APPLY = `gl_FragColor.rgb = floor(gl_FragColor.rgb * 255.0 + ditherThreshold()) / 255.0;`;
+
+/** Splices the ordered-dithering shader code above into `material`'s own shader. */
+function dither(material) {
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <dithering_pars_fragment>", DITHER_DECLARATIONS)
+      .replace("#include <dithering_fragment>", DITHER_APPLY);
+  };
+  return material;
+}
+
 /**
  * The model, its light and the camera. Needs no WebGL, so it is testable in Node.
  * `frontMap` and `backMap` are the textures for the two faces; `faceRadius` is how much
@@ -92,11 +135,11 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   // that: broad and faint rather than a glint.
   const sphere = new Mesh(
     new SphereGeometry(1, 96, 64),
-    new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.95 }),
+    dither(new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.95 })),
   );
   const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.9 };
-  const front = new Mesh(faceGeometry(1, faceRadius), new MeshPhysicalMaterial({ map: frontMap, ...faceFinish }));
-  const back = new Mesh(faceGeometry(-1, faceRadius), new MeshPhysicalMaterial({ map: backMap, ...faceFinish }));
+  const front = new Mesh(faceGeometry(1, faceRadius), dither(new MeshPhysicalMaterial({ map: frontMap, ...faceFinish })));
+  const back = new Mesh(faceGeometry(-1, faceRadius), dither(new MeshPhysicalMaterial({ map: backMap, ...faceFinish })));
 
   // Turning the ball turns everything in this group; the lights stay where they are.
   const ball = new Group();
