@@ -4,7 +4,7 @@
 // connected visitor through the Feed Durable Object.
 import { DurableObject } from "cloudflare:workers";
 import { parseClientId } from "../lib/client-id.js";
-import { askJev } from "../lib/decide.js";
+import { askJev, warmJev } from "../lib/decide.js";
 
 const MAX_QUESTION_LENGTH = 280;
 const MAX_BODY_BYTES = 4096;
@@ -107,6 +107,23 @@ async function handleFeed(request, env) {
   return feed(env).fetch(request);
 }
 
+// The page pings this once, as a question starts being typed, so the isolate's connection
+// to the model is warm by the time /api/ask fires (see warmJev and issue #46). Under the
+// same rate limit as /api/ask, so the ping can't crowd the real ask out.
+async function handleWarm(request, env) {
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  if (env.RATE_LIMITER && !(await env.RATE_LIMITER.limit({ key: ip })).success) {
+    return json(429, { error: "The ball needs a moment. Try again shortly." });
+  }
+  try {
+    await warmJev(env.AI);
+  } catch (err) {
+    console.error("Jev warmup failed:", err.message);
+    return json(502, { error: "The ball is clouded. Try again." });
+  }
+  return new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
@@ -116,6 +133,7 @@ export default {
       }
       return handleAsk(request, env, ctx);
     }
+    if (pathname === "/api/warm") return handleWarm(request, env);
     if (pathname === "/api/feed") return handleFeed(request, env);
     return new Response("Not found", { status: 404 });
   },

@@ -35,6 +35,16 @@ function syncSend() {
 }
 
 input.addEventListener("input", syncSend);
+// Typing always precedes submitting by a few seconds, so the first keystroke warms the
+// model path once (/api/warm): a cold first ask spends over a second on connection setup
+// before any inference, and this lands the real ask warm, inside the shake. Fire and
+// forget — a failed warmup changes nothing but the length of that first wait.
+let warmed = false;
+input.addEventListener("input", () => {
+  if (warmed) return;
+  warmed = true;
+  fetch("/api/warm").catch(() => {});
+});
 // Also covers a value the browser restored (autofill, back navigation).
 syncSend();
 

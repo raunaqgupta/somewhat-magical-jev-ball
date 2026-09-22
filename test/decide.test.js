@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { askJev, decide, isShareable } from "../lib/decide.js";
+import { askJev, decide, isShareable, warmJev } from "../lib/decide.js";
 import { AFFIRMATIVE, NEGATIVE, NON_COMMITTAL, TONE } from "../lib/answers.js";
 
 // Signals with everything quiet; override per case.
@@ -209,4 +209,19 @@ test("askJev reads answers out of the binding's { state, result } wrapper, not t
   const ai = { run: async () => fakeAIRun };
   const { signals } = await askJev("Will this work?", ai);
   assert.equal(signals.hazy, 0.1);
+});
+
+test("warmJev runs one judgment over a non-empty question, through the same gateway", async () => {
+  const calls = [];
+  const ai = { run: async (model, input, options) => (calls.push({ model, input, options }), fakeAIRun) };
+
+  await warmJev(ai);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].model, "typesafe/jev");
+  // An empty state is rejected by the model's content moderation, so the warmup's fixed
+  // question must be a real one; its answer is discarded either way.
+  assert.notEqual(calls[0].input.state.question, "");
+  assert.equal(Object.keys(calls[0].input.questions).length, 1);
+  assert.equal(calls[0].options.gateway.id, "somewhat-magical-jev-ball");
 });

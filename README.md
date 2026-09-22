@@ -17,7 +17,9 @@ npm test
 ## Deploy
 
 `public/` is served as static assets and `src/worker.js` handles `/api/ask`
-(`wrangler.jsonc`). The custom domains, the `AI` binding, and a rate limit of 20 requests per
+(`wrangler.jsonc`). The page also pings `/api/warm` once as a question starts being typed,
+warming the model connection so a first answer lands inside the shake rather than a second
+behind it. The custom domains, the `AI` binding, and a rate limit of 20 requests per
 minute per IP are configured there.
 
 ```sh
