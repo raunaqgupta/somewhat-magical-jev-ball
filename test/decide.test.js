@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { decide, isShareable } from "../lib/decide.js";
+import { askJev, decide, isShareable } from "../lib/decide.js";
 import { AFFIRMATIVE, NEGATIVE, NON_COMMITTAL, TONE } from "../lib/answers.js";
 
 // Signals with everything quiet; override per case.
@@ -183,4 +183,30 @@ test("a question is shareable unless it contains personal information", () => {
 
 test("personal information does not change the answer", () => {
   assert.deepEqual(run({ personal: 0.99, favorable: 1, certain: 1 }), run({ favorable: 1, certain: 1 }));
+});
+
+const noulAnswers = Object.fromEntries(
+  ["personal", "snarky", "selfDeprecating", "fact", "truth", "favorable", "certain", "hazy", "later", "unwelcome", "unpredictable", "unfocused"]
+    .map((name) => [name, { type: "noul", noul: 0.1 }])
+);
+const fakeResult = { model: "test", answers: noulAnswers, usage: { input_tokens: 0, output_tokens: 0 } };
+// The AI binding wraps a model's own result: { state, result, gatewayMetadata }.
+const fakeAIRun = { state: "Completed", result: fakeResult, gatewayMetadata: { keySource: "BYOK" } };
+
+test("askJev calls Workers AI's typesafe/jev model, routed through the named gateway", async () => {
+  const calls = [];
+  const ai = { run: async (model, input, options) => (calls.push({ model, input, options }), fakeAIRun) };
+
+  await askJev("Will this work?", ai);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].model, "typesafe/jev");
+  assert.deepEqual(calls[0].input.state, { question: "Will this work?" });
+  assert.equal(calls[0].options.gateway.id, "somewhat-magical-jev-ball");
+});
+
+test("askJev reads answers out of the binding's { state, result } wrapper, not the top level", async () => {
+  const ai = { run: async () => fakeAIRun };
+  const { signals } = await askJev("Will this work?", ai);
+  assert.equal(signals.hazy, 0.1);
 });
