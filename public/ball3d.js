@@ -31,22 +31,40 @@ export const faceRadiusFor = (size) => WINDOW_SIZE / size;
 const SURFACE = 1.002;
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
-// The ball sits at the centre of a cube (the ball's own radius is 1, so its diameter is 2;
-// the cube's edge is 6x that, 12, so each vertex sits this far out on every axis). These
-// are directional lights, with no distance falloff and a direction fixed by this position
-// only through its own unit vector, so this scales the whole rig up without changing the
-// render at all — the direction (and so VERTEX_INTENSITY, which only depends on it) is
-// exactly the same as at half this distance.
-const CUBE_HALF_EDGE = 6;
-// A directional light at each of the cube's 8 vertices, all aimed at its centre (a
-// light's own default target, where the ball already sits), the same intensity each.
+const PHI = (1 + Math.sqrt(5)) / 2; // the golden ratio, the dodecahedron's own constant
+
+/**
+ * The 20 vertices of a regular dodecahedron centred on the origin: the 8 corners of a cube
+ * (±1, ±1, ±1), plus 3 sets of 4 forming a "roof" over each pair of the cube's opposite
+ * faces, using the golden ratio — the standard construction. All 20 are the same distance
+ * from the centre (sqrt(3), same as the cube's own corners). The actual distance does not
+ * matter for a directional light (see VERTEX_INTENSITY below), so, unlike the cube this
+ * replaces, this is left unscaled.
+ */
+function dodecahedronVertices() {
+  const vertices = [];
+  for (const sx of [-1, 1]) {
+    for (const sy of [-1, 1]) {
+      for (const sz of [-1, 1]) vertices.push([sx, sy, sz]);
+    }
+  }
+  for (const s1 of [-1, 1]) {
+    for (const s2 of [-1, 1]) {
+      vertices.push([0, s1 / PHI, s2 * PHI], [s1 / PHI, s2 * PHI, 0], [s2 * PHI, 0, s1 / PHI]);
+    }
+  }
+  return vertices;
+}
+
+// A directional light at each of the dodecahedron's 20 vertices, all aimed at its centre
+// (a light's own default target, where the ball already sits), the same intensity each.
 // three.js divides the light on a diffuse surface by pi, so an intensity of pi at normal
 // incidence (N·L = 1) shows a perfectly diffuse surface at its own colour. A point on the
-// ball facing straight at the camera has 4 of the 8 vertices on its own (+z) side, each at
-// N·L = 1/sqrt(3) (the angle from an axis to a cube's diagonal); this is the intensity
-// that brings those 4 together to that same pi, so the ball reads at its own colour
-// there, not washed out.
-const VERTEX_INTENSITY = (Math.PI * Math.sqrt(3)) / 4;
+// ball facing straight at the camera has 8 of the 20 vertices on its own (+z) side (the
+// other 12 are behind it or exactly level, at z = 0); their N·L values sum to
+// 2(2 + sqrt(5))/sqrt(3), so this is the intensity that brings those 8 together to that
+// same pi, and the ball reads at its own colour there, not washed out.
+const VERTEX_INTENSITY = Math.PI / ((2 * (2 + Math.sqrt(5))) / Math.sqrt(3));
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
@@ -152,18 +170,14 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   const ball = new Group();
   ball.add(sphere, front, back);
 
-  // Eight directional lights, one at each vertex of the cube described above (see
-  // VERTEX_INTENSITY and CUBE_HALF_EDGE), all aimed at the origin, where the ball already
-  // sits (a light's own default target, so none needs one added to the scene).
-  const vertexLights = [-1, 1].flatMap((sx) =>
-    [-1, 1].flatMap((sy) =>
-      [-1, 1].map((sz) => {
-        const vertexLight = new DirectionalLight(0xffffff, VERTEX_INTENSITY);
-        vertexLight.position.set(sx * CUBE_HALF_EDGE, sy * CUBE_HALF_EDGE, sz * CUBE_HALF_EDGE);
-        return vertexLight;
-      }),
-    ),
-  );
+  // A directional light at each of the dodecahedron's 20 vertices (see VERTEX_INTENSITY
+  // and dodecahedronVertices above), all aimed at the origin, where the ball already sits
+  // (a light's own default target, so none needs one added to the scene).
+  const vertexLights = dodecahedronVertices().map(([x, y, z]) => {
+    const vertexLight = new DirectionalLight(0xffffff, VERTEX_INTENSITY);
+    vertexLight.position.set(x, y, z);
+    return vertexLight;
+  });
 
   const scene = new Scene();
   scene.add(ball, ...vertexLights);
