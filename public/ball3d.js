@@ -72,12 +72,16 @@ export function faceGeometry(side, radius = FACE_RADIUS) {
   return geometry;
 }
 
-// Ordered (Bayer) dithering, from https://alex-charlton.com/posts/Dithering_on_the_GPU/.
-// Breaks up the 8-bit banding an ordinary framebuffer would otherwise show across the
-// sphere's subtle, near-black shading and its soft, spread highlight. Spliced into each
-// material's own shader in place of three.js's own dithering (a different, noise-based
-// technique) — at the same point it would have gone: after tone mapping and colour space
-// conversion, just before the colour is quantized to 8 bits.
+// A visible, retro-style ordered (Bayer) dither, per
+// https://tympanus.net/codrops/2025/06/04/building-a-real-time-dithering-shader/ (a 4x4
+// matrix; this uses the finer 8x8 from the same family, per
+// https://alex-charlton.com/posts/Dithering_on_the_GPU/). Spliced into each material's own
+// shader in place of three.js's own dithering (a different, subtler, noise-based technique
+// meant to be invisible) — at the same point it would have gone: after tone mapping and
+// colour space conversion, just before the final colour would ordinarily be quantized to 8
+// bits. Instead of that full 256 levels, each channel is quantized to just a handful, with
+// the matrix threshold deciding which side of the gap a pixel falls on: the classic coarse,
+// stippled look, not an invisible anti-banding blend.
 const DITHER_DECLARATIONS = `
 const int ditherMatrix8x8[64] = int[](
    0, 32,  8, 40,  2, 34, 10, 42,
@@ -89,21 +93,19 @@ const int ditherMatrix8x8[64] = int[](
   15, 47,  7, 39, 13, 45,  5, 37,
   63, 31, 55, 23, 61, 29, 53, 21
 );
+// Distinct shades per colour channel to dither between. Low enough to read as a clearly
+// stippled, retro look rather than a smooth gradient.
+const float ditherLevels = 4.0;
 
-// The matrix, tiled across the screen: which of the 64 steps between one 8-bit colour
-// level and the next this pixel rounds to.
+// The matrix, tiled across the screen: which of the 64 steps between one dithered level
+// and the next this pixel rounds to.
 float ditherThreshold() {
   int x = int(mod(gl_FragCoord.x, 8.0));
   int y = int(mod(gl_FragCoord.y, 8.0));
   return float(ditherMatrix8x8[x + y * 8]) / 64.0;
 }
 `;
-// Quantizing to 8 bits the ordinary way (round to the nearest level) always rounds the
-// same way for a given colour, so a whole run of pixels a smooth gradient barely moves
-// across can share one level: a visible band. Adding the threshold before flooring instead
-// means each pixel's own place in the matrix decides whether it rounds up or down, so nearby
-// pixels at the same true colour differ, and the levels appear to blend into one another.
-const DITHER_APPLY = `gl_FragColor.rgb = floor(gl_FragColor.rgb * 255.0 + ditherThreshold()) / 255.0;`;
+const DITHER_APPLY = `gl_FragColor.rgb = floor(gl_FragColor.rgb * ditherLevels + ditherThreshold()) / ditherLevels;`;
 
 /** Splices the ordered-dithering shader code above into `material`'s own shader. */
 function dither(material) {
