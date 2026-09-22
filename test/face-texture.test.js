@@ -122,7 +122,7 @@ test("a long answer wraps onto centred lines, an 18px line height apart", () => 
 });
 
 test("every answer the ball can give fits inside the window", () => {
-  const all = [...AFFIRMATIVE, ...NEGATIVE, ...Object.values(NON_COMMITTAL), ...Object.values(TONE), "…", "Jev"];
+  const all = [...AFFIRMATIVE, ...NEGATIVE, ...Object.values(NON_COMMITTAL), ...Object.values(TONE), "…", "..."];
   for (const answer of all) {
     const { ctx, drawn } = fakeContext();
     paintFront(ctx, SIZE, answer);
