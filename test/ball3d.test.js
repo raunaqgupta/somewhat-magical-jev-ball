@@ -92,15 +92,17 @@ test("both lights are white, and together show a face turned to the viewer close
   assert.ok(headOn <= Math.PI * 1.2, `too bright: ${headOn}`);
 });
 
-test("the key light sits well off to the side, so a face turned to the viewer shows a real light-to-dark gradient", () => {
+test("the key light sits up and to the right, so a face turned to the viewer shows a real light-to-dark gradient", () => {
   const { key } = buildScene();
   assert.equal(key.isDirectionalLight, true);
   const { x, y, z } = key.position.clone().normalize();
-  // Mostly to the side (+x), some lift (+y), and only some of it +z (the camera's direction,
-  // and a face's normal when it is turned to the viewer) — enough that the face is still lit,
-  // but far short of dead-on, so it shades across rather than reading as a flat, even wash.
-  assert.ok(x > Math.max(y, z), `should be mostly to the side: x=${x}, y=${y}, z=${z}`);
-  assert.ok(z > 0.2 && z < 0.7, `too close to dead-on, or too far off to light a face at all: z=${z}`);
+  // Mostly to the right (+x) and up (+y) — both a clear majority share, not just a slight
+  // lift — with only some of it +z (the camera's direction, and a face's normal when it is
+  // turned to the viewer): enough that the face is still lit, but far short of dead-on, so
+  // it shades across rather than reading as a flat, even wash.
+  assert.ok(x > z && y > z, `should sit up and to the right of dead-on: x=${x}, y=${y}, z=${z}`);
+  assert.ok(x > 0.6 && y > 0.4, `too small a lift to the side or upward: x=${x}, y=${y}`);
+  assert.ok(z > 0.1 && z < 0.5, `too close to dead-on, or too far off to light a face at all: z=${z}`);
 });
 
 test("the ambient light has no direction, and is dimmer than the key: it only keeps shadows off pure black", () => {

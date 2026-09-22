@@ -33,19 +33,19 @@ const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
 // three.js divides the light on a diffuse surface by pi, so a combined intensity of pi
 // (at normal incidence, N·L = 1) shows a perfectly diffuse surface at its own colour. The
-// key light sits well off to the side now (see KEY_DIRECTION), so a face turned to the
-// viewer only gets a share of it (N·L is about 0.44 at dead-on): a real side-lit gradient
+// key light sits up and to the right now (see KEY_DIRECTION), so a face turned to the
+// viewer only gets a share of it (N·L is about 0.25 at dead-on): a real side-lit gradient
 // rather than a flat, even wash, at the cost of needing a brighter key to still read at
 // close to full brightness on its lit side. Split between a dim ambient fill and the
 // directional key, rather than given to the ambient light alone, so the sphere and the
 // faces both show real shading, not a flat, evenly-lit look.
 const AMBIENT_INTENSITY = Math.PI * 0.5;
-const KEY_INTENSITY = Math.PI * 1.2;
-// Well off to the side (mostly +x) and a little up, rather than close to the camera's own
-// axis: the highlight then sits clearly to one side rather than near dead-centre, and the
-// sphere (and now the faces too, see their finish below) shows a real light-to-dark
-// gradient across it, not just a near-uniform wash with a small glint in the middle.
-const KEY_DIRECTION = [1, 0.3, 0.5];
+const KEY_INTENSITY = Math.PI * 1.6;
+// Further up and to the right than before, rather than close to the camera's own axis:
+// the highlight sits clearly in the upper right, not near dead-centre, and the sphere
+// (and the faces too, see their finish below) shows a real light-to-dark gradient
+// across it, not just a near-uniform wash with a small glint in the middle.
+const KEY_DIRECTION = [1.4, 1, 0.45];
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
@@ -91,9 +91,9 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   // that: broad and faint rather than a glint.
   const sphere = new Mesh(
     new SphereGeometry(1, 96, 64),
-    new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.5 }),
+    new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.7 }),
   );
-  const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.8 };
+  const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.9 };
   const front = new Mesh(faceGeometry(1, faceRadius), new MeshPhysicalMaterial({ map: frontMap, ...faceFinish }));
   const back = new Mesh(faceGeometry(-1, faceRadius), new MeshPhysicalMaterial({ map: backMap, ...faceFinish }));
 
