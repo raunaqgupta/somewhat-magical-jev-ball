@@ -121,6 +121,25 @@ test("a long answer wraps onto centred lines, an 18px line height apart", () => 
   }
 });
 
+test("the same 14px text paints larger on the texture of the phone's smaller 96px window", () => {
+  const { ctx, drawn } = fakeContext();
+  const phoneScale = SIZE / 96;
+  paintFront(ctx, SIZE, "Yes", 96);
+
+  const [text] = drawn.texts;
+  near(parseFloat(text.font), 14 * phoneScale, 1e-6);
+  near(text.x, SIZE / 2);
+  near(text.y, SIZE / 2, 1e-6);
+  // The wrap is the desktop's 100px scaled to the smaller window (64px of it), so an
+  // answer that fits the desktop's window on one line wraps on the phone's.
+  const wide = fakeContext();
+  paintFront(wide.ctx, SIZE, "It is certain");
+  assert.equal(wide.drawn.texts.length, 1, "one line on the desktop window");
+  const phone = fakeContext();
+  paintFront(phone.ctx, SIZE, "It is certain", 96);
+  assert.ok(phone.drawn.texts.length >= 2, "wrapped on the phone's window");
+});
+
 test("every answer the ball can give fits inside the window", () => {
   const all = [...AFFIRMATIVE, ...NEGATIVE, ...Object.values(NON_COMMITTAL), ...Object.values(TONE), "…", "..."];
   for (const answer of all) {

@@ -1,9 +1,12 @@
 // Draws the two faces of the ball onto a square canvas, to be wrapped onto the 3D
 // model as textures. Each function takes the 2D drawing context, so it can be
-// tested without a browser. The measurements are the Paper designs' (a 149px
-// window, 14px text on an 18px line), scaled to the texture size.
+// tested without a browser. The measurements are the Paper designs': a 149px window
+// on the desktop ball (frame 7B-0) and a 96px one on the phone's (frame 36-0, drawn
+// 96×95 there, taken as a circle), with 14px text on an 18px line in both — each
+// function takes the window's size so the same text sits in either.
 
 const WINDOW_PX = 149;
+const PHONE_WINDOW_PX = 96;
 const TEXT_MAX_WIDTH_PX = 100;
 const FONT_PX = 14;
 const LINE_PX = 18;
@@ -16,7 +19,9 @@ const BACK_FONT = 'ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, "
 // the whole window is a near-flat dark grey (about 20 of 255). This is the shadow's
 // opacity, as a share of the glow colour's own opacity, at each fraction of the way from
 // the centre (0) to the edge (1) of the 149px window: 1 minus the share of the blur that
-// falls on the unshadowed disc.
+// falls on the unshadowed disc. (On the phone's 96px window the same shadow covers the
+// window outright — flat, no lighter disc — but within 1/255 of these fractions, so the
+// one gradient stands for both.)
 const GLOW_COLOR = [71, 71, 71];
 const GLOW_OPACITY = 0x4a / 255;
 const GLOW_STOPS = [
@@ -42,26 +47,28 @@ export function wrapText(measure, text, maxWidth) {
   return lines;
 }
 
-function centredText(ctx, size, text, { font, color }) {
-  const scale = size / WINDOW_PX;
+function centredText(ctx, size, text, { font, color, windowPx }) {
+  const scale = size / windowPx;
   ctx.font = `${FONT_PX * scale}px ${font}`;
   ctx.fillStyle = color;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  const lines = wrapText((s) => ctx.measureText(s).width, text, TEXT_MAX_WIDTH_PX * scale);
+  // The wrap is the desktop's 100px, scaled to whatever window it is painted for.
+  const maxWidth = TEXT_MAX_WIDTH_PX * (windowPx / WINDOW_PX) * scale;
+  const lines = wrapText((s) => ctx.measureText(s).width, text, maxWidth);
   const lineHeight = LINE_PX * scale;
   const top = size / 2 - ((lines.length - 1) * lineHeight) / 2;
   lines.forEach((line, i) => ctx.fillText(line, size / 2, top + i * lineHeight));
 }
 
 /** The front: a dark window with a soft lighter glow round its edge, and the answer in grey. */
-export function paintFront(ctx, size, text) {
+export function paintFront(ctx, size, text, windowPx = WINDOW_PX) {
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, size, size);
 
   // The design offsets the shadow 2px down.
-  const centreY = size / 2 + 2 * (size / WINDOW_PX);
+  const centreY = size / 2 + 2 * (size / windowPx);
   const glow = ctx.createRadialGradient(size / 2, centreY, 0, size / 2, centreY, size / 2);
   for (const [at, share] of GLOW_STOPS) {
     glow.addColorStop(at, `rgba(${GLOW_COLOR.join(",")},${(share * GLOW_OPACITY).toFixed(4)})`);
@@ -69,12 +76,12 @@ export function paintFront(ctx, size, text) {
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, size, size);
 
-  centredText(ctx, size, text, { font: FRONT_FONT, color: "#aaaaaa" });
+  centredText(ctx, size, text, { font: FRONT_FONT, color: "#aaaaaa", windowPx });
 }
 
 /** The back: a white window with the model version in black monospace. */
-export function paintBack(ctx, size, text) {
+export function paintBack(ctx, size, text, windowPx = WINDOW_PX) {
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, size, size);
-  centredText(ctx, size, text, { font: BACK_FONT, color: "#000" });
+  centredText(ctx, size, text, { font: BACK_FONT, color: "#000", windowPx });
 }
