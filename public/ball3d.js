@@ -22,13 +22,11 @@ import { paintBack, paintFront } from "./face-texture.js";
 
 const BALL_SIZE = 273; // the design's ball on a desktop; a phone's is smaller (see style.css)
 const WINDOW_SIZE = 149; // the design's window, the same size on every ball
-// Each face is a cap of the sphere as wide as the design's 149px window, sitting a
-// hair above the surface so it does not flicker against it.
+// Each face is a cap of the sphere as wide as the design's 149px window.
 const FACE_RADIUS = WINDOW_SIZE / BALL_SIZE; // as a fraction of the ball's radius
 
 /** The share of a ball's radius that its 149px window covers, for a ball `size` px across. */
 export const faceRadiusFor = (size) => WINDOW_SIZE / size;
-const SURFACE = 1.002;
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
 // The two lights from three.js's own webgl_effects_ascii example (mrdoob/three.js,
@@ -51,7 +49,22 @@ const LIGHTS = [
  * reading backwards. `radius` is the cap's width as a share of the ball's radius.
  */
 export function faceGeometry(side, radius = FACE_RADIUS) {
-  const geometry = new SphereGeometry(SURFACE, 64, 32, 0, 2 * Math.PI, 0, Math.asin(radius / SURFACE));
+  // Low-poly, sized to the sphere's own facets (which are flat-shaded too): 20 width segments,
+  // the sphere's own count, so each sector spans the same 18° of longitude a sphere facet
+  // does. The cap spans only ~33° of latitude, so 2 height segments — rings of ~16.5° — is
+  // what lands closest to the sphere's 18° rings; finer would make the face read as a
+  // smoother patch pasted onto the faceted ball rather than part of it.
+  const geometry = new SphereGeometry(1, 20, 2, 0, 2 * Math.PI, 0, Math.asin(radius));
+  // A mesh this coarse chords measurably inside the true sphere between its vertices — up to
+  // 1 − cos of half a ring step, ~1% of the radius — while the sphere's own mesh rises to
+  // touch the true surface along its own edges, and those edges cross the window (the
+  // sphere's equator, and its rings 18° either side of it, all pass through it). Shared with
+  // the sphere's exact surface, the black sphere speckles through the white face in little
+  // patches at every crossing. So each cap sits a hair along its own axis in front of the
+  // sphere: the smallest lift that clears the dip, and one taken along the cap's axis alone,
+  // so the window's on-screen footprint is exactly what radius 1 gives. polygonOffset (below)
+  // still wins the exact-coplanar touchpoints left where the two meshes cross.
+  geometry.translate(0, 1 - Math.cos(Math.asin(radius) / 4), 0);
   geometry.rotateX((side * Math.PI) / 2); // the cap's pole is +y; turn it to +z or -z
 
   const position = geometry.attributes.position;
@@ -138,13 +151,26 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
     dither(new MeshPhongMaterial({ color: 0x030303, flatShading: true })),
   );
   // The two faces, carrying text and the window's own painted-in glow (face-texture.js), are
-  // MeshPhongMaterial too now, but not flat-shaded: their own geometry is already smooth (64
-  // and 32 segments, not the sphere's 20 and 10), and flat shading would break their texture
-  // up into visible facets. Phong's highlight is shaped by shininess (how tight it is) and
-  // specular (how bright): low and dim, the same "broad and faint rather than a glint" a
-  // first attempt at MeshPhysicalMaterial's own clearcoat needed too, to avoid a hard, blown-
-  // out spot landing right on the text.
-  const faceFinish = { shininess: 10, specular: 0x222222 };
+  // MeshPhongMaterial too, flat-shaded like the sphere: a first attempt left them smooth,
+  // reasoning that flat shading would break their texture into visible facets, but a smooth
+  // patch on an otherwise faceted sphere just reads as a separate disc floating in front of
+  // it, not part of the same surface. Their geometry is low-poly to match (see faceGeometry),
+  // sized so their facets are the same size as the sphere's own and the two shade alike.
+  // Phong's highlight is shaped by shininess (how tight it is) and specular (how
+  // bright): low and dim, the same "broad and faint rather than a glint" a first attempt at
+  // MeshPhysicalMaterial's own clearcoat needed too, to avoid a hard, blown-out spot landing
+  // right on the text. polygonOffset pulls each face just in front of the sphere in the
+  // depth test alone — a GPU-side nudge, complementing the cap's own hair-width axial lift
+  // (see faceGeometry) — so the two stop z-fighting without the face reading as a separate
+  // disc held off the ball's own surface.
+  const faceFinish = {
+    shininess: 10,
+    specular: 0x222222,
+    flatShading: true,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
+  };
   const front = new Mesh(faceGeometry(1, faceRadius), dither(new MeshPhongMaterial({ map: frontMap, ...faceFinish })));
   const back = new Mesh(faceGeometry(-1, faceRadius), dither(new MeshPhongMaterial({ map: backMap, ...faceFinish })));
 
