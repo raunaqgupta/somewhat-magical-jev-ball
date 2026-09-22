@@ -10,6 +10,7 @@ import {
   CanvasTexture,
   Group,
   Mesh,
+  MeshPhongMaterial,
   MeshPhysicalMaterial,
   OrthographicCamera,
   PointLight,
@@ -127,18 +128,18 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
   camera.position.z = 5;
 
-  // The plain sphere is glossy, with a high clearcoatRoughness so its highlights spread
-  // into a soft sheen rather than concentrating into small bright points. The two faces
-  // carry text and the window's own painted-in glow (face-texture.js): a first attempt
-  // gave them the sphere's own tight, low-roughness gloss, and a light's specular put a
-  // hard, blown-out spot right on the text. A softer clearcoat, at a lower amount and an
-  // even higher roughness than the sphere's, gives them a reflection too without that:
-  // broad and faint rather than a glint.
+  // The plain sphere: MeshPhongMaterial and flatShading, the same as the example above's
+  // own sphere (own colour, 0x030303, kept; the example's own material had none, defaulting
+  // to plain white, which is the example's own choice for its own generic demo, not a
+  // property of "which material", so not something to carry over here). Phong has no
+  // clearcoat layer, so the highlight is its ordinary specular one instead now; the two
+  // faces, carrying text and the window's own painted-in glow (face-texture.js), keep their
+  // own separate, still-clearcoat finish, tuned in earlier commits to stay soft on the text.
   const sphere = new Mesh(
-    // 20 and 10 segments, the same as the example above's own sphere (own radius: 1, ours,
-    // not its 200, which was sized for that scene, not this one).
+    // 20 and 10 segments, the same as the example's own sphere (own radius: 1, ours, not
+    // its 200, which was sized for that scene, not this one).
     new SphereGeometry(1, 20, 10),
-    dither(new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.95 })),
+    dither(new MeshPhongMaterial({ color: 0x030303, flatShading: true })),
   );
   const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.9 };
   const front = new Mesh(faceGeometry(1, faceRadius), dither(new MeshPhysicalMaterial({ map: frontMap, ...faceFinish })));

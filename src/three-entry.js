@@ -5,6 +5,7 @@ export {
   CanvasTexture,
   Group,
   Mesh,
+  MeshPhongMaterial,
   MeshPhysicalMaterial,
   OrthographicCamera,
   PointLight,
