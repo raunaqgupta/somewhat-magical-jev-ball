@@ -7,12 +7,9 @@ export {
   Mesh,
   MeshPhysicalMaterial,
   OrthographicCamera,
-  RectAreaLight,
+  PointLight,
   Scene,
   SphereGeometry,
   SRGBColorSpace,
   WebGLRenderer,
 } from "three";
-// A separate module (not part of the main three.js build): the lookup-table textures
-// RectAreaLight needs, which RectAreaLightUniformsLib.init() (see ball3d.js) installs.
-export { RectAreaLightUniformsLib } from "three/addons/lights/RectAreaLightUniformsLib.js";

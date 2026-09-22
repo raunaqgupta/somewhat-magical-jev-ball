@@ -12,8 +12,7 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   OrthographicCamera,
-  RectAreaLight,
-  RectAreaLightUniformsLib,
+  PointLight,
   Scene,
   SphereGeometry,
   SRGBColorSpace,
@@ -32,41 +31,16 @@ export const faceRadiusFor = (size) => WINDOW_SIZE / size;
 const SURFACE = 1.002;
 const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
-const PHI = (1 + Math.sqrt(5)) / 2; // the golden ratio, the dodecahedron's own constant
-
-/**
- * The 20 vertices of a regular dodecahedron centred on the origin: the 8 corners of a cube
- * (±1, ±1, ±1), plus 3 sets of 4 forming a "roof" over each pair of the cube's opposite
- * faces, using the golden ratio — the standard construction. All 20 are the same distance
- * (sqrt(3)) from the centre, before VERTEX_SCALE below.
- */
-function dodecahedronVertices() {
-  const vertices = [];
-  for (const sx of [-1, 1]) {
-    for (const sy of [-1, 1]) {
-      for (const sz of [-1, 1]) vertices.push([sx, sy, sz]);
-    }
-  }
-  for (const s1 of [-1, 1]) {
-    for (const s2 of [-1, 1]) {
-      vertices.push([0, s1 / PHI, s2 * PHI], [s1 / PHI, s2 * PHI, 0], [s2 * PHI, 0, s1 / PHI]);
-    }
-  }
-  return vertices;
-}
-
-// A rect area light — a rectangular panel, not a point or a direction — at each of the
-// dodecahedron's 20 vertices, each turned to face the centre, the same size and intensity.
-// Unlike the directional lights this replaces, an area light's own brightness genuinely
-// depends on its distance and size (nearer or bigger reads as brighter, the same as a real
-// studio light would), so, also unlike them, the vertices are scaled out first. These
-// numbers are tuned by eye against the 1-unit-radius ball, not derived: there is no
-// equivalent here of the directional lights' "intensity pi at N·L 1 shows a surface at its
-// own colour" rule, since a panel's contribution is an integral over the solid angle it
-// covers, not a single dot product.
-const VERTEX_SCALE = 4;
-const VERTEX_SIZE = 1.4;
-const VERTEX_INTENSITY = 10;
+// The two lights from three.js's own webgl_effects_ascii example (mrdoob/three.js,
+// examples/webgl_effects_ascii.html), kept exactly as given there: a brighter one and a
+// dimmer fill, opposite corners of the scene. Both have distance 0 (no cutoff) and decay 0
+// (no falloff by distance at all — three.js's getDistanceAttenuation returns exactly 1
+// whichever it is), so, the same as our own former directional lights, only each one's
+// direction to a given point on the ball matters, not how far away it sits.
+const LIGHTS = [
+  { intensity: 3, position: [500, 500, 500] },
+  { intensity: 1, position: [-500, -500, -500] },
+];
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
@@ -161,7 +135,9 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   // even higher roughness than the sphere's, gives them a reflection too without that:
   // broad and faint rather than a glint.
   const sphere = new Mesh(
-    new SphereGeometry(1, 96, 64),
+    // 20 and 10 segments, the same as the example above's own sphere (own radius: 1, ours,
+    // not its 200, which was sized for that scene, not this one).
+    new SphereGeometry(1, 20, 10),
     dither(new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.95 })),
   );
   const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.9 };
@@ -172,21 +148,19 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   const ball = new Group();
   ball.add(sphere, front, back);
 
-  // A rect area light at each of the dodecahedron's 20 vertices (see VERTEX_SCALE,
-  // VERTEX_SIZE, VERTEX_INTENSITY and dodecahedronVertices above), each turned to face the
-  // origin, where the ball already sits. Unlike a directional light, an area light has no
-  // default target to aim at: lookAt turns it, the same as any other object in the scene.
-  const vertexLights = dodecahedronVertices().map(([x, y, z]) => {
-    const vertexLight = new RectAreaLight(0xffffff, VERTEX_INTENSITY, VERTEX_SIZE, VERTEX_SIZE);
-    vertexLight.position.set(x * VERTEX_SCALE, y * VERTEX_SCALE, z * VERTEX_SCALE);
-    vertexLight.lookAt(0, 0, 0);
-    return vertexLight;
+  // The two lights from LIGHTS above, as plain THREE.PointLights (a point light's default
+  // target, unlike a rect area light's, is the origin, where the ball already sits, so
+  // neither needs one set).
+  const pointLights = LIGHTS.map(({ intensity, position }) => {
+    const pointLight = new PointLight(0xffffff, intensity, 0, 0);
+    pointLight.position.set(...position);
+    return pointLight;
   });
 
   const scene = new Scene();
-  scene.add(ball, ...vertexLights);
+  scene.add(ball, ...pointLights);
 
-  return { scene, camera, ball, sphere, front, back, vertexLights };
+  return { scene, camera, ball, sphere, front, back, pointLights };
 }
 
 function faceTexture(paint, text, renderer) {
@@ -222,10 +196,6 @@ export function createBall(ball, answerEl, onLost = () => {}) {
   } catch {
     return null;
   }
-  // The lookup-table textures the vertex lights (RectAreaLights) need to render at all;
-  // safe to call more than once. Left out of buildScene, which needs no WebGL and is
-  // tested in Node, since this is WebGL-rendering setup, not scene-graph building.
-  RectAreaLightUniformsLib.init();
   // Without this, any pixel brighter than a light's own colour (1, 1, 1) clips straight
   // to white: a clearcoat highlight's very peak, however wide or dim it is otherwise,
   // always shows as a small hard, flat white spot. A filmic tone curve rolls bright
