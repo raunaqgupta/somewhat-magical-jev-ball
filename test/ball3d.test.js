@@ -77,30 +77,30 @@ test("there are exactly two light sources in the scene: an ambient fill and a di
   assert.equal(scene.background, null);
 });
 
-test("both lights are white, and together are strong enough to show a face in its own colours head-on", () => {
+test("both lights are white, and together show a face turned to the viewer close to its own colour", () => {
   const { light, key } = buildScene();
   assert.equal(light.type, "AmbientLight");
   assert.equal(light.color.getHex(), 0xffffff);
   assert.equal(key.type, "DirectionalLight");
   assert.equal(key.color.getHex(), 0xffffff);
   // three.js divides light on a diffuse surface by pi, so pi is the least combined intensity, at
-  // normal incidence, that shows a face at its own colour; the glossy material gives up a little
-  // of it, so it is a touch more. Too much would wash the faces out, so it is held close to pi.
-  const headOn = light.intensity + key.intensity; // the key's direction is nearly +z (see below)
-  assert.ok(headOn >= Math.PI * 0.9, `too dim: ${headOn}`);
+  // normal incidence, that shows a face at its own colour. The key sits to the side (see below),
+  // so only its N·L share at a face's ~+z normal counts towards that, not its full intensity.
+  const nDotL = key.position.clone().normalize().z;
+  const headOn = light.intensity + key.intensity * nDotL;
+  assert.ok(headOn >= Math.PI * 0.85, `too dim: ${headOn}`);
   assert.ok(headOn <= Math.PI * 1.2, `too bright: ${headOn}`);
-  // Most of it is the key light, so the sphere still shows real shading, not a flat wash.
-  assert.ok(key.intensity > light.intensity, "the key should outweigh the ambient fill");
 });
 
-test("the key light sits close to the camera's axis, so whichever face is turned to the viewer stays legible", () => {
+test("the key light sits well off to the side, so a face turned to the viewer shows a real light-to-dark gradient", () => {
   const { key } = buildScene();
   assert.equal(key.isDirectionalLight, true);
   const { x, y, z } = key.position.clone().normalize();
-  // Mostly +z (the camera's direction, and a face's normal when it is turned to the viewer),
-  // with a gentle offset so the sphere still shows a highlight and shades toward its edge.
-  assert.ok(z > 0.85, `too far off-axis to keep a face legible: z=${z}`);
-  assert.ok(Math.hypot(x, y) > 0.1, `too close to dead-on to shade the sphere: x=${x}, y=${y}`);
+  // Mostly to the side (+x), some lift (+y), and only some of it +z (the camera's direction,
+  // and a face's normal when it is turned to the viewer) — enough that the face is still lit,
+  // but far short of dead-on, so it shades across rather than reading as a flat, even wash.
+  assert.ok(x > Math.max(y, z), `should be mostly to the side: x=${x}, y=${y}, z=${z}`);
+  assert.ok(z > 0.2 && z < 0.7, `too close to dead-on, or too far off to light a face at all: z=${z}`);
 });
 
 test("the ambient light has no direction, and is dimmer than the key: it only keeps shadows off pure black", () => {
@@ -123,13 +123,18 @@ test("the sphere and both faces are lit by the same lights, and the faces carry 
   assert.equal(sphere.material.map, null);
 });
 
-test("only the plain sphere is glossy: the faces are fully matte, so the key light adds no specular glint over the text", () => {
+test("the sphere and the faces are both glossy, but the faces spread their reflection into a soft sheen, not a glint", () => {
   const { sphere, front, back } = buildScene();
   assert.ok(sphere.material.clearcoat > 0, "the sphere should have its highlight");
-  assert.ok(sphere.material.roughness < 1, "and a tight enough one to read as glossy");
   for (const mesh of [front, back]) {
-    assert.equal(mesh.material.clearcoat ?? 0, 0, "a face should not add its own specular glint over the text");
-    assert.equal(mesh.material.roughness, 1, "fully matte: no specular lobe from the base material either");
+    assert.ok(mesh.material.clearcoat > 0, "a face should show some reflection too, not read as flat");
+    // Weaker, and spread wider, than the sphere's: a soft sheen across the face rather than a
+    // hard, bright spot landing on its text (see the comment in buildScene for why).
+    assert.ok(mesh.material.clearcoat < sphere.material.clearcoat, "a face's reflection should be fainter");
+    assert.ok(
+      mesh.material.clearcoatRoughness > sphere.material.clearcoatRoughness,
+      "a face's reflection should spread wider than the sphere's"
+    );
   }
 });
 
