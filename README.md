@@ -1,30 +1,45 @@
 # Somewhat Magical Jev Ball
 
 A Magic 8 Ball whose answers are decided by [Jev](https://docs.typesafe.ai), TypeSafe's System One model.
-Plain HTML/CSS/JS front end, following the Paper design; a small Cloudflare Worker keeps the API key off the browser.
+Plain HTML/CSS/JS front end, following the Paper design; a small Cloudflare Worker calls Jev
+server-side and relays live questions to other visitors.
 
-Live at https://magicjevball.raunaqgupta.com
+Live at https://somewhatmagicaljevball.com
 
 ## Run
 
 ```sh
 npm install
-cp .dev.vars.example .dev.vars   # then add your TYPESAFE_API_KEY
-npm start                        # wrangler dev, http://localhost:3210
+npm start   # wrangler dev, http://localhost:3210
 npm test
 ```
 
 ## Deploy
 
 `public/` is served as static assets and `src/worker.js` handles `/api/ask`
-(`wrangler.jsonc`). The custom domain and a rate limit of 20 requests per minute per IP
-are configured there.
+(`wrangler.jsonc`). The custom domains, the `AI` binding, and a rate limit of 20 requests per
+minute per IP are configured there.
 
 ```sh
 npx wrangler login
-npx wrangler secret put TYPESAFE_API_KEY   # once
 npm run deploy
 ```
+
+### Calling Jev
+
+Jev is called as `typesafe/jev`, a model in [Workers AI's own catalog](https://developers.cloudflare.com/ai/models/typesafe/jev/),
+through the `AI` binding (`env.AI.run(...)`, `wrangler.jsonc`'s `"ai": { "binding": "AI" }`,
+`askJev` in `lib/decide.js`), routed through the `somewhat-magical-jev-ball` AI Gateway
+(`GATEWAY_ID`) so its usage is logged there. Cloudflare bills this against the TypeSafe key added
+to that gateway as a Bring Your Own Key — the Worker holds no TypeSafe key or secret of its own,
+and none needs setting up to run this locally or deploy it. `wrangler dev` proxies the `AI`
+binding to the real service even in local dev, so `npm start` calls the real Jev too.
+
+(Cloudflare's separate AI Gateway *Universal Endpoint* BYOK — a raw HTTPS call to
+`gateway.ai.cloudflare.com/v1/{account}/{gateway}/{provider}/...` — only proxies to
+[a fixed list of providers](https://developers.cloudflare.com/ai-gateway/providers/) that
+doesn't include TypeSafe; that was tried first and doesn't work. `typesafe/jev` in the Workers AI
+catalog is a different, separate integration, and the one this app actually uses.)
 
 ## The layout
 
