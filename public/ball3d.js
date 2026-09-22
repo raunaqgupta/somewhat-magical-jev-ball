@@ -47,6 +47,13 @@ const KEY_INTENSITY = Math.PI * 0.95;
 // and the sphere (and the faces too, see their finish below) shows a real light-to-dark
 // gradient across it, not just a near-uniform wash with a small glint in the middle.
 const KEY_DIRECTION = [2, 0.7, 0.4];
+// A second, rim light: the same kind of light as the key (a directional light, the same
+// intensity), but behind the ball rather than in front of it (negative z, the far side
+// from the camera) and in the opposite corner (negative x and y, bottom left rather than
+// top right) — the exact opposite of KEY_DIRECTION. Lights the far edge of the sphere,
+// the side the key light's own shadow falls on, with a soft glow along its silhouette.
+const RIM_INTENSITY = KEY_INTENSITY;
+const RIM_DIRECTION = KEY_DIRECTION.map((v) => -v);
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
@@ -154,16 +161,19 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
 
   // A dim ambient fill, so nothing goes pure black, plus a directional key light for
   // shading and a highlight (see KEY_DIRECTION above for why whichever face is toward
-  // the viewer stays legible). The key's default target is the origin, where the ball
-  // already sits, so it needs no target added to the scene.
+  // the viewer stays legible), and a second, rim light behind the ball (see RIM_DIRECTION
+  // above). Both lights' default target is the origin, where the ball already sits, so
+  // neither needs a target added to the scene.
   const light = new AmbientLight(0xffffff, AMBIENT_INTENSITY);
   const key = new DirectionalLight(0xffffff, KEY_INTENSITY);
   key.position.set(...KEY_DIRECTION);
+  const rim = new DirectionalLight(0xffffff, RIM_INTENSITY);
+  rim.position.set(...RIM_DIRECTION);
 
   const scene = new Scene();
-  scene.add(ball, light, key);
+  scene.add(ball, light, key, rim);
 
-  return { scene, camera, ball, sphere, front, back, light, key };
+  return { scene, camera, ball, sphere, front, back, light, key, rim };
 }
 
 function faceTexture(paint, text, renderer) {
