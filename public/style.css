@@ -163,6 +163,10 @@ body::before {
      reaches full size. */
   scale: 1;
   transition: scale 600ms ease-in-out;
+  /* A mild, continuous float, so the ball feels alive at rest. The standalone `translate`
+     property, like `scale` above, composes with the shake's `transform` instead of fighting
+     it for the same property. */
+  animation: bob 4s ease-in-out infinite;
 }
 
 .ball.is-pushed {
@@ -267,6 +271,11 @@ body::before {
   20%, 80% { transform: translate(4px, -2px) rotate(2deg); }
   30%, 50%, 70% { transform: translate(-7px, 3px) rotate(-3deg); }
   40%, 60% { transform: translate(7px, -3px) rotate(3deg); }
+}
+
+@keyframes bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
 }
 
 @keyframes pulse {
@@ -407,6 +416,9 @@ body::before {
     scale: 1;
   }
 
+  /* Including the base .ball rule turns off its continuous bob, alongside the shake and
+     the thinking pulse. */
+  .ball,
   .ball.shaking,
   .ball.thinking .answer {
     animation: none;
