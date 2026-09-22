@@ -6,6 +6,7 @@
 // The answer stays real text in the page (a screen-reader live region); the
 // front face is drawn from it, and redrawn whenever it changes.
 import {
+  ACESFilmicToneMapping,
   AmbientLight,
   CanvasTexture,
   DirectionalLight,
@@ -33,19 +34,19 @@ const TEXTURE_SIZE = 640;
 const BACK_TEXT = "jev 1.13";
 // three.js divides the light on a diffuse surface by pi, so a combined intensity of pi
 // (at normal incidence, N·L = 1) shows a perfectly diffuse surface at its own colour. The
-// key light sits up and to the right now (see KEY_DIRECTION), so a face turned to the
-// viewer only gets a share of it (N·L is about 0.25 at dead-on): a real side-lit gradient
-// rather than a flat, even wash, at the cost of needing a brighter key to still read at
-// close to full brightness on its lit side. Split between a dim ambient fill and the
-// directional key, rather than given to the ambient light alone, so the sphere and the
-// faces both show real shading, not a flat, evenly-lit look.
-const AMBIENT_INTENSITY = Math.PI * 0.5;
-const KEY_INTENSITY = Math.PI * 1.6;
-// Further up and to the right than before, rather than close to the camera's own axis:
-// the highlight sits clearly in the upper right, not near dead-centre, and the sphere
-// (and the faces too, see their finish below) shows a real light-to-dark gradient
-// across it, not just a near-uniform wash with a small glint in the middle.
-const KEY_DIRECTION = [1.4, 1, 0.45];
+// key light sits well to the right now (see KEY_DIRECTION), so a face turned to the
+// viewer only gets a share of it: a real side-lit gradient rather than a flat, even wash.
+// Split between a dim ambient fill and the directional key, rather than given to the
+// ambient light alone, so the sphere and the faces both show real shading, not a flat,
+// evenly-lit look. The reflection's own intensity is toned down separately, via a lower
+// clearcoat amount below, rather than by dimming this further.
+const AMBIENT_INTENSITY = Math.PI * 0.6;
+const KEY_INTENSITY = Math.PI * 0.95;
+// Further to the right than before, and a little less lift, rather than close to the
+// camera's own axis: the highlight sits clearly off to the right, not near dead-centre,
+// and the sphere (and the faces too, see their finish below) shows a real light-to-dark
+// gradient across it, not just a near-uniform wash with a small glint in the middle.
+const KEY_DIRECTION = [2, 0.7, 0.4];
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
@@ -91,9 +92,9 @@ export function buildScene({ frontMap = null, backMap = null, faceRadius = FACE_
   // that: broad and faint rather than a glint.
   const sphere = new Mesh(
     new SphereGeometry(1, 96, 64),
-    new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.7 }),
+    new MeshPhysicalMaterial({ color: 0x030303, roughness: 0.3, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.95 }),
   );
-  const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.9 };
+  const faceFinish = { roughness: 0.5, metalness: 0, clearcoat: 0.3, clearcoatRoughness: 0.9 };
   const front = new Mesh(faceGeometry(1, faceRadius), new MeshPhysicalMaterial({ map: frontMap, ...faceFinish }));
   const back = new Mesh(faceGeometry(-1, faceRadius), new MeshPhysicalMaterial({ map: backMap, ...faceFinish }));
 
@@ -148,6 +149,11 @@ export function createBall(ball, answerEl, onLost = () => {}) {
   } catch {
     return null;
   }
+  // Without this, any pixel brighter than the key light's own colour (1, 1, 1) clips
+  // straight to white: the clearcoat highlight's very peak, however wide or dim it is
+  // otherwise, always shows as a small hard, flat white spot. A filmic tone curve rolls
+  // bright values off smoothly instead, so the highlight reads as a soft glow throughout.
+  renderer.toneMapping = ACESFilmicToneMapping;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   // The ball is a different size on a phone; the canvas fills it, whatever it is.
   const sizeNow = () => ball.clientWidth || BALL_SIZE;
