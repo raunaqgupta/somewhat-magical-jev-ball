@@ -48,12 +48,15 @@ const KEY_INTENSITY = Math.PI * 0.95;
 // gradient across it, not just a near-uniform wash with a small glint in the middle.
 const KEY_DIRECTION = [2, 0.7, 0.4];
 // A second, rim light: the same kind of light as the key (a directional light, the same
-// intensity), but behind the ball rather than in front of it (negative z, the far side
-// from the camera) and in the opposite corner (negative x and y, bottom left rather than
-// top right) — the exact opposite of KEY_DIRECTION. Lights the far edge of the sphere,
-// the side the key light's own shadow falls on, with a soft glow along its silhouette.
+// intensity), behind the ball rather than in front of it (negative z, the far side from
+// the camera), with a small lean towards the bottom left (negative x and y) rather than
+// the key's top right. Not simply -KEY_DIRECTION: any light with a sideways lean grazes
+// the matching edge of the *visible* hemisphere too, however far behind it sits — that's
+// what a rim light is. Keeping the lean small (z very dominant over x and y) keeps that
+// grazing contribution below what actually shows, while still lighting the far side, the
+// side the key light's own shadow falls on, with a soft glow along its hidden silhouette.
 const RIM_INTENSITY = KEY_INTENSITY;
-const RIM_DIRECTION = KEY_DIRECTION.map((v) => -v);
+const RIM_DIRECTION = [-0.3, -0.1, -3];
 
 /**
  * A cap of the sphere facing +z (the front, `side` = 1) or -z (the back, `side` =
