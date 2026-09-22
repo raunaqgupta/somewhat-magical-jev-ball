@@ -1,8 +1,10 @@
 // Shows the questions other visitors are asking as faint blurbs drifting in the
-// background. Purely decorative: it never touches the ball or the input, and the
-// page works the same if the feed is unavailable.
+// background. When nobody has asked anything for a while, or the feed is unavailable, a
+// built-in list of questions is shown instead, so the background is never empty. Purely
+// decorative: it never touches the ball or the input, and the page works the same without it.
 import { blurbLook, estimateSize, pickMotion, pickPosition } from "./blurb-layout.js";
 import { clientId } from "./client-id.js";
+import { createDeck, idleDelay, isQuiet } from "./idle-feed.js";
 
 const layer = document.getElementById("background");
 const MAX_BLURBS = 24;
@@ -59,6 +61,32 @@ function show(question) {
   );
 }
 
+// When the last question from another visitor arrived, to know when it has gone quiet.
+let lastLiveAt = 0;
+let idleDeck;
+
+// The next built-in question. The list is 1000 questions, so it is only loaded when needed.
+async function nextIdleQuestion() {
+  if (!idleDeck) {
+    const { IDLE_QUESTIONS } = await import("./idle-questions.js");
+    idleDeck = createDeck(IDLE_QUESTIONS);
+  }
+  return idleDeck.next();
+}
+
+async function showIdleQuestion() {
+  if (!document.hidden && isQuiet(Date.now(), lastLiveAt)) {
+    try {
+      const question = await nextIdleQuestion();
+      // A live question may have arrived while the list was loading.
+      if (question && isQuiet(Date.now(), lastLiveAt)) show(question);
+    } catch {
+      // The list could not be loaded: the background stays as it is.
+    }
+  }
+  setTimeout(showIdleQuestion, idleDelay());
+}
+
 let delay = RECONNECT_MIN_MS;
 
 function connect() {
@@ -79,7 +107,10 @@ function connect() {
     } catch {
       return; // Not a question.
     }
-    if (typeof question === "string" && question) show(question);
+    if (typeof question === "string" && question) {
+      lastLiveAt = Date.now();
+      show(question);
+    }
   });
 
   socket.addEventListener("close", () => {
@@ -90,3 +121,4 @@ function connect() {
 }
 
 if (layer && "WebSocket" in window) connect();
+if (layer) setTimeout(showIdleQuestion, idleDelay());
