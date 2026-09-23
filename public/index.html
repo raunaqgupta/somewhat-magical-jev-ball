@@ -4,25 +4,49 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Somewhat Magical Jev Ball</title>
-    <meta name="description" content="Ask the ball a yes or no question. Jev decides." />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16'/%3E%3C/svg%3E" />
+    <meta
+      name="description"
+      content="What if Jev was a seemingly all-knowing dark-colored sphere?"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16'/%3E%3C/svg%3E"
+    />
     <meta name="author" content="Raunaq Gupta" />
     <meta property="article:author" content="Raunaq Gupta" />
     <meta property="article:published_time" content="2026-09-23" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://somewhatmagicaljevball.com/" />
     <meta property="og:title" content="Somewhat Magical Jev Ball" />
-    <meta property="og:description" content="What if Jev was a seemingly all-knowing dark-colored sphere?" />
-    <meta property="og:image" content="https://somewhatmagicaljevball.com/og-image.png" />
+    <meta
+      property="og:description"
+      content="What if Jev was a seemingly all-knowing dark-colored sphere?"
+    />
+    <meta
+      property="og:image"
+      content="https://somewhatmagicaljevball.com/og-image.png"
+    />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Image of a dark-colored sphere" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Somewhat Magical Jev Ball" />
-    <meta name="twitter:description" content="What if Jev was a seemingly all-knowing dark-colored sphere?" />
-    <meta name="twitter:image" content="https://somewhatmagicaljevball.com/og-image.png" />
+    <meta
+      name="twitter:description"
+      content="What if Jev was a seemingly all-knowing dark-colored sphere?"
+    />
+    <meta
+      name="twitter:image"
+      content="https://somewhatmagicaljevball.com/og-image.png"
+    />
     <meta name="twitter:image:alt" content="Image of a dark-colored sphere" />
-    <link rel="preload" href="/fonts/ballet-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/fonts/ballet-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/app.js"></script>
     <script type="module" src="/background.js"></script>
@@ -36,41 +60,47 @@
     <div class="background" id="background" aria-hidden="true"></div>
     <main class="stage">
       <div class="ball-cell">
-      <div class="ball" id="ball">
-        <div class="window window-front">
-          <p class="answer" id="answer" aria-live="polite">...</p>
+        <div class="ball" id="ball">
+          <div class="window window-front">
+            <p class="answer" id="answer" aria-live="polite">...</p>
+          </div>
+          <div class="window window-back" aria-hidden="true">
+            <p class="model">jev 1.13</p>
+          </div>
         </div>
-        <div class="window window-back" aria-hidden="true">
-          <p class="model">jev 1.13</p>
-        </div>
-      </div>
       </div>
 
       <div class="ask-cell">
-      <div class="ask-wrap">
-      <form class="ask" id="ask" autocomplete="off">
-        <label class="sr-only" for="question">Your question</label>
-        <input
-          id="question"
-          name="question"
-          type="text"
-          maxlength="280"
-          placeholder="Ask a question"
-          autofocus
-        />
-        <button type="submit" id="send" aria-label="Ask the ball" disabled>
-          <svg width="15" height="15" viewBox="0 0 15 15" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path
-              d="M1.203 1.043C1.005 0.955 0.772 1.005 0.628 1.166C0.483 1.328 0.459 1.565 0.568 1.752L3.921 7.5L0.568 13.248C0.459 13.435 0.483 13.672 0.628 13.834C0.772 13.995 1.005 14.045 1.203 13.957L14.703 7.957C14.884 7.877 15 7.698 15 7.5C15 7.302 14.884 7.123 14.703 7.043L1.203 1.043ZM4.846 7.1L2.212 2.586L13.269 7.5L2.212 12.414L4.846 7.9H9C9.221 7.9 9.4 7.721 9.4 7.5C9.4 7.279 9.221 7.1 9 7.1H4.846Z"
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              fill="currentColor"
+        <div class="ask-wrap">
+          <form class="ask" id="ask" autocomplete="off">
+            <label class="sr-only" for="question">Your question</label>
+            <input
+              id="question"
+              name="question"
+              type="text"
+              maxlength="280"
+              placeholder="Ask a question"
+              autofocus
             />
-          </svg>
-        </button>
-      </form>
-      <p class="error" id="error" role="alert"></p>
-      </div>
+            <button type="submit" id="send" aria-label="Ask the ball" disabled>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 15 15"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M1.203 1.043C1.005 0.955 0.772 1.005 0.628 1.166C0.483 1.328 0.459 1.565 0.568 1.752L3.921 7.5L0.568 13.248C0.459 13.435 0.483 13.672 0.628 13.834C0.772 13.995 1.005 14.045 1.203 13.957L14.703 7.957C14.884 7.877 15 7.698 15 7.5C15 7.302 14.884 7.123 14.703 7.043L1.203 1.043ZM4.846 7.1L2.212 2.586L13.269 7.5L2.212 12.414L4.846 7.9H9C9.221 7.9 9.4 7.721 9.4 7.5C9.4 7.279 9.221 7.1 9 7.1H4.846Z"
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </form>
+          <p class="error" id="error" role="alert"></p>
+        </div>
       </div>
     </main>
   </body>
