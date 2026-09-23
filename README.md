@@ -27,6 +27,11 @@ npx wrangler login
 npm run deploy
 ```
 
+Cloudflare's Workers Builds deploy every other branch with `npx wrangler preview`, which reads the
+`previews` block in `wrangler.jsonc`. A preview does not inherit the top-level settings, so that
+block repeats the `AI`, `FEED` and rate limiter bindings (the limiters with namespace ids of their
+own).
+
 ### Calling Jev
 
 Jev is called as `typesafe/jev`, a model in [Workers AI's own catalog](https://developers.cloudflare.com/ai/models/typesafe/jev/),
