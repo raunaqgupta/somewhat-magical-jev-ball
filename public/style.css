@@ -14,6 +14,10 @@
   --frame: #aaaaaa;
   --cell: #fcfcfc;
   --window-text: #aaaaaa;
+  /* A question from another visitor is tinted, from the design's live-blurb (1X-0), so it
+     reads differently from the built-in ones, which are plain dashed outlines. */
+  --live-fill: #f3ffff;
+  --live-border: #c7f1f1;
   --window-glow: #4747474a;
   --font: system-ui, sans-serif;
   /* The question box's own face, from the designs. */
@@ -147,7 +151,8 @@ body::before {
   white-space: nowrap;
 }
 
-/* Questions from other visitors, drifting behind everything else. */
+/* Questions drifting behind everything else. It is the body's first child, so the title, the
+   ball and the question box (later siblings that are positioned too) paint over it. */
 .background {
   position: fixed;
   inset: 0;
@@ -190,6 +195,12 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 0;
+}
+
+/* Questions that came from real visitors' browsers rather than the built-in list. */
+.blurb-live {
+  background: var(--live-fill);
+  border-color: var(--live-border);
 }
 
 /* The ball and the question box are cells of the page's grid. */

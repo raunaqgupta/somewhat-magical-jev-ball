@@ -27,7 +27,9 @@ function contentRect() {
   return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
-function show(question) {
+// `live` marks a question that came from another visitor, so it can be coloured differently from
+// the built-in ones.
+function show(question, live = false) {
   if (document.hidden) return;
   while (layer.children.length >= MAX_BLURBS) layer.firstChild.remove();
 
@@ -38,7 +40,7 @@ function show(question) {
   const { dx, dy, duration } = pickMotion(drift);
 
   const el = document.createElement("div");
-  el.className = "blurb";
+  el.className = live ? "blurb blurb-live" : "blurb";
   // textContent, never innerHTML: the text comes from other visitors.
   el.textContent = question;
   el.style.left = `${x}px`;
@@ -109,7 +111,7 @@ function connect() {
     }
     if (typeof question === "string" && question) {
       lastLiveAt = Date.now();
-      show(question);
+      show(question, true);
     }
   });
 
