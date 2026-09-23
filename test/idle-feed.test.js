@@ -131,3 +131,23 @@ test("the background layer comes before the title and the cells, so they paint o
   assert.ok(layer < html.indexOf('class="site-header"'), "the layer must precede the title");
   assert.ok(layer < html.indexOf('class="stage"'), "the layer must precede the ball and input");
 });
+
+test("clicking a blurb asks its question: the background announces it, and app.js fills the input and submits", () => {
+  const background = source("background.js");
+  const app = source("app.js");
+  const css = source("style.css");
+  // The background layer stays out of the input's way; it only announces the click.
+  assert.match(background, /el\.addEventListener\("click"/);
+  assert.match(background, /new CustomEvent\("blurb-ask", \{ detail: \{ question \} \}\)/);
+  assert.doesNotMatch(background, /getElementById\("question"\)|requestSubmit/);
+  // app.js fills the input, tells it it was "typed", and submits the form, unless it is busy.
+  const handler = /addEventListener\("blurb-ask"[\s\S]*?\n\}\);/.exec(app)?.[0];
+  assert.ok(handler, "no blurb-ask handler in app.js");
+  assert.match(handler, /if \(busy\) return;/);
+  assert.match(handler, /input\.value = event\.detail\.question/);
+  assert.match(handler, /new Event\("input"\)/);
+  assert.match(handler, /form\.requestSubmit\(\)/);
+  // The layer lets clicks through; a blurb takes them.
+  assert.match(css, /\.blurb\s*\{[^}]*pointer-events:\s*auto[^}]*cursor:\s*pointer/);
+  assert.match(css, /\.background\s*\{[^}]*pointer-events:\s*none/);
+});
