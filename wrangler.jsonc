@@ -33,5 +33,27 @@
       "namespace_id": "4022",
       "simple": { "limit": 20, "period": 60 }
     }
-  ]
+  ],
+  // What `wrangler preview` (Cloudflare's build for a branch other than the production one)
+  // deploys. A preview does not inherit the settings above, so it repeats the bindings the
+  // Worker reads. Each preview gets its own Durable Object namespace and storage; the rate
+  // limiters use namespace ids of their own so a preview does not share production's counts.
+  "previews": {
+    "ai": { "binding": "AI" },
+    "durable_objects": {
+      "bindings": [{ "name": "FEED", "class_name": "Feed" }]
+    },
+    "ratelimits": [
+      {
+        "name": "RATE_LIMITER",
+        "namespace_id": "4023",
+        "simple": { "limit": 20, "period": 60 }
+      },
+      {
+        "name": "FEED_LIMITER",
+        "namespace_id": "4024",
+        "simple": { "limit": 20, "period": 60 }
+      }
+    ]
+  }
 }

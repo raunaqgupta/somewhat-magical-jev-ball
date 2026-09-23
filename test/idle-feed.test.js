@@ -110,3 +110,24 @@ test("the background shows a built-in question only when quiet, and loads the li
   assert.match(background, /setTimeout\(showIdleQuestion, idleDelay\(\)\)/);
   assert.match(background, /!document\.hidden/);
 });
+
+test("a question from another visitor is marked live, a built-in one is not", () => {
+  const background = source("background.js");
+  // Only the feed's message handler passes `live`; the idle path shows a plain blurb.
+  assert.match(background, /show\(question, true\)/);
+  assert.match(background, /show\(question\);/);
+  assert.match(background, /live \? "blurb blurb-live" : "blurb"/);
+  // The design's live-blurb (Paper 1X-0): a pale cyan fill and border, unlike the plain outline.
+  const css = source("style.css");
+  assert.match(css, /--live-fill:\s*#f3ffff/i);
+  assert.match(css, /--live-border:\s*#c7f1f1/i);
+  assert.match(css, /\.blurb-live\s*\{[^}]*background:\s*var\(--live-fill\)[^}]*border-color:\s*var\(--live-border\)/);
+});
+
+test("the background layer comes before the title and the cells, so they paint over the blurbs", () => {
+  const html = source("index.html");
+  const layer = html.indexOf('id="background"');
+  assert.ok(layer > -1);
+  assert.ok(layer < html.indexOf('class="site-header"'), "the layer must precede the title");
+  assert.ok(layer < html.indexOf('class="stage"'), "the layer must precede the ball and input");
+});

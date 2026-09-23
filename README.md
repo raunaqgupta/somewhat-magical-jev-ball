@@ -27,6 +27,11 @@ npx wrangler login
 npm run deploy
 ```
 
+Cloudflare's Workers Builds deploy every other branch with `npx wrangler preview`, which reads the
+`previews` block in `wrangler.jsonc`. A preview does not inherit the top-level settings, so that
+block repeats the `AI`, `FEED` and rate limiter bindings (the limiters with namespace ids of their
+own).
+
 ### Calling Jev
 
 Jev is called as `typesafe/jev`, a model in [Workers AI's own catalog](https://developers.cloudflare.com/ai/models/typesafe/jev/),
@@ -171,7 +176,10 @@ with the same geometry (`public/ball-math.js`), so the text still flips. Pointer
 
 Questions asked by any visitor drift across the background of everyone else's page as faint,
 dashed pills, at random positions and sizes so they read as having depth, then fade away
-(`public/background.js`, layout rules in `public/blurb-layout.js`).
+(`public/background.js`, layout rules in `public/blurb-layout.js`). Questions from real visitors are
+tinted pale cyan (the design's live-blurb) so they read differently from the built-in ones, which
+are plain outlines. The layer is the body's first child, so the title, ball and question box always
+paint over the blurbs, never the other way round.
 
 - A `Feed` Durable Object (`src/worker.js`) holds one WebSocket per visitor at `/api/feed` and
   relays each question to all of them. **Nothing is stored**: a question is only seen by visitors
