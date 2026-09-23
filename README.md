@@ -47,25 +47,41 @@ catalog is a different, separate integration, and the one this app actually uses
 
 The page follows the Paper designs for a desktop (1280px wide, frame 7B-0) and a phone (370px wide,
 frame 36-0). On a desktop it is a CSS grid of three columns (`1fr 421px 1fr`, the middle column's
-two box lines included) and five rows (`1fr 71px 346px 118px 1fr`).
+two box lines included) and five rows (`1fr 71px 346px 118px 1fr`; the empty rows are never shorter
+than a phone's safe areas, see below).
 The title "Somewhat Magical Jev Ball" (`<header class="site-header">` with the page's `<h1>`), the ball
 and the question box are the three cells of the middle column, and the empty
 outer rows and columns take up what is left, so the stack is centred on the page. The ball's and
 question box's cells have 36px of padding; the title sits 20px from its cell's top and 16px from its
-bottom. On a desktop the three cells sit on a `#fcfcfc` fill.
+bottom. The three cells sit on a `#fcfcfc` fill.
 
 The lines are drawn by the cells themselves (their top edges, run out to both sides, and the column's
 sides), so there are no extra elements for them. On a desktop they are dashed `#eeeeee` across the
 page, and where they cross the middle column's box they are redrawn solid: the box's sides, the
 title row's top edge and the question box's bottom edge are the darker `#aaaaaa` frame, and the
-ball's and question box's top edges are `#eeeeee`. On a phone the lines stay solid and pale
-(`#f4f4f4` across the page, the box in `#cccccc`) on clear, white cells, as its frame has it.
+ball's and question box's top edges are `#eeeeee`.
 
-On a phone (600px wide or less) it is the same grid with different sizes: the ball is 179px instead of
-273px, the cells have 16px at the sides, and the middle column is as wide as the title (about 300px)
-instead of 421px, with the empty columns taking the rest. The rows are `1fr 63px 252px 118px 1fr`; the
-title's row grows if the title has to wrap, which it only does on phones narrower than the title (about
-300px). The title is 24px Ballet on a 34px line on a desktop and on a 30px line on a phone.
+On a phone (600px wide or less) it is the same grid, with **the same styling** (the same lines, box,
+fill and type) and only the sizes and spacing that fit a narrow screen, as in frame 36-0: the ball is
+179px instead of 273px, the title is 18px Ballet on a 22px line with 50px either side (instead of 24px
+on a 34px line with 36px), the ball's and question box's cells have 16px at the sides, and the
+question box's cell has 18px above and below it instead of 36px. The middle column is as wide as the
+title and its 50px (about 305px) instead of 421px, with the empty columns taking the rest. The rows are
+`1fr 59px 252px 82px 1fr`; the title's row grows if the title has to wrap, which it only does on
+phones narrower than the title (about 305px). (Frame 36-0 draws the page-wide lines in a paler
+`#f4f4f4`, and its cells clear; those are treated as differences in how the frame was drawn, not in
+how the page looks on a phone.)
+
+The page is drawn out to the very edges of a phone's screen (`viewport-fit=cover`), including behind
+its notch, status bar and home bar; without it the browser lays the page out inside those and leaves
+a band above and below where none of the grid's lines reach. The empty rows above and below the grid
+are never shorter than `env(safe-area-inset-top)` and `env(safe-area-inset-bottom)`, so on a short
+screen the grid still scrolls clear of them.
+
+iOS Safari zooms the page in when a field whose text is under 16px is focused, and the question box's
+text is the design's 14px. On iOS only, `public/viewport.js` adds `maximum-scale=1` to the viewport,
+which stops that zoom without changing the type; iOS still lets people pinch-zoom. Other browsers do not
+zoom on focus, so they are left as they are.
 
 The window in the ball is the design's 149px on the desktop ball and 96px on the phone's (frame 36-0
 draws it 96×95; the page takes it as a 96px circle). The ball's window is nearly flat dark grey
@@ -81,6 +97,10 @@ The title's script face, Ballet, is served from this site (`public/fonts/`, the 
 preloaded), not from Google Fonts, so the page makes no third-party request for it. It is licensed under
 the SIL Open Font License 1.1, and its license and copyright notice ship alongside it. If the font cannot
 load, the title shows in the system font.
+
+The question box's text is Hyperlegible Sans Regular, as in the designs, served from this site in the
+same way (Latin subset, WOFF2, preloaded, its SIL Open Font License 1.1 alongside it). Other scripts,
+and the box while the font loads, use the system font.
 
 ## The 3D ball
 

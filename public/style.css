@@ -7,8 +7,8 @@
   --title: #696969;
   /* The grid's lines, from the desktop frame (7B-0): across the page they are #EEEEEE and
      dashed; the middle column's box is drawn over them, solid and darker (#AAAAAA), and the
-     box's three cells sit on a #FCFCFC fill. The phone frame (36-0) keeps the paler solid
-     lines on white cells; the media query below resets these four. */
+     box's three cells sit on a #FCFCFC fill. A phone looks the same: only sizes and spacing
+     change in the media query below, not the styling. */
   --line: #eeeeee;
   --line-style: dashed;
   --frame: #aaaaaa;
@@ -16,6 +16,13 @@
   --window-text: #aaaaaa;
   --window-glow: #4747474a;
   --font: system-ui, sans-serif;
+  /* The question box's own face, from the designs. */
+  --input-font: "Hyperlegible Sans", system-ui, sans-serif;
+  /* The parts of a phone's screen its notch, status bar and home bar cover. The page is drawn
+     out to the screen's edges (viewport-fit=cover in index.html) so its lines reach them too,
+     and the empty rows above and below the grid are never shorter than these. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* The title's script face, served from this site (see fonts/ballet-OFL.txt). Only the
@@ -26,6 +33,19 @@
   font-weight: 400;
   font-display: swap;
   src: url("/fonts/ballet-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* The question box's face in the designs, Hyperlegible Sans Regular, also served from this site
+   (see fonts/hyperlegible-sans-OFL.txt), the Latin subset. Other scripts fall back to the
+   system font. */
+@font-face {
+  font-family: "Hyperlegible Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/hyperlegible-sans-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
     U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
@@ -53,7 +73,7 @@ body {
   /* The desktop frame's column and rows: a 421px middle column (its two 1px box lines
      included), the title's 71px row, the ball's 346px and the question box's 118px. */
   grid-template-columns: 1fr 421px 1fr;
-  grid-template-rows: 1fr 71px 346px 118px 1fr;
+  grid-template-rows: minmax(var(--safe-top), 1fr) 71px 346px 118px minmax(var(--safe-bottom), 1fr);
   /* The lines run out 100vw past their cells; none of that should make the page scroll. */
   overflow-x: clip;
   background: var(--bg);
@@ -91,7 +111,7 @@ body::before {
 }
 
 /* The three cells of the middle column: the box they draw together is the darker line,
-   and on a desktop they sit on the design's #FCFCFC fill (the phone's cells are clear). */
+   and they sit on the design's #FCFCFC fill. */
 .site-header,
 .ball-cell,
 .ask-cell {
@@ -116,7 +136,7 @@ body::before {
 .site-title {
   margin: 0;
   color: var(--title);
-  /* 24px Ballet on a 34px line, the desktop frame's title; the phone's sits on a 30px
+  /* 24px Ballet on a 34px line, the desktop frame's title; the phone's is 18px on a 22px
      line (see the media query). */
   font: 400 24px/34px "Ballet", system-ui, sans-serif;
   white-space: nowrap;
@@ -336,6 +356,7 @@ body::before {
   color: var(--ink);
   padding: 0;
   font: inherit;
+  font-family: var(--input-font);
   font-size: 14px;
   line-height: 18px;
   height: 18px;
@@ -361,7 +382,8 @@ body::before {
 }
 
 .ask button:disabled {
-  opacity: 0.3;
+  /* The design's icon while there is nothing to send: the same #AAAAAA as the placeholder. */
+  color: var(--window-text);
   cursor: default;
 }
 
@@ -395,37 +417,41 @@ body::before {
   white-space: nowrap;
 }
 
-/* The phone design: the same grid with a smaller ball and 16px at the sides of the cells. The
-   middle column is as wide as the title (about 300px), and the empty columns take the rest,
-   so the box has a strip of the page's lines on either side of it. The title's row grows
-   if the title has to wrap on a very narrow phone. The phone frame keeps the paler, solid
-   lines on clear cells, and its window is the design's 96px (36-0), not the desktop's 149px. */
+/* The phone design (36-0): the same page, and the same styling (the lines, the box, the fill
+   and the type are the desktop's), with the sizes and spacing that fit a narrow screen: a
+   smaller ball, title and window, and 16px at the sides of the cells. The middle column is as
+   wide as the title and its 50px either side (about 304px), and the empty columns take the
+   rest, so the box has a strip of the page's lines on either side of it. The title's row grows
+   if the title has to wrap on a very narrow phone. */
 @media (max-width: 600px) {
   body {
-    /* The question box's row is still 118px: the design books its bottom line to the row
-       below (117px plus the 1px), which here is drawn by the cell itself. */
+    /* The question box's row is 82px: the design's 18px above and below the 44px box, and the
+       box's own two 1px lines. */
     grid-template-columns: 1fr minmax(0, max-content) 1fr;
-    grid-template-rows: 1fr minmax(63px, auto) 252px 118px 1fr;
-    --line: #f4f4f4;
-    --line-style: solid;
-    --frame: #cccccc;
-    --cell: transparent;
+    grid-template-rows: minmax(var(--safe-top), 1fr) minmax(59px, auto) 252px 82px minmax(var(--safe-bottom), 1fr);
   }
 
   .site-header {
-    padding: 16px;
+    /* 20px above the 22px title line and 16px below it, on the design's 59px row (its 1px top
+       line included); the 50px at the sides are what make the middle column as wide as it is. */
+    padding: 20px 50px 16px;
   }
 
-  .ball-cell,
-  .ask-cell {
+  .ball-cell {
     padding: 36px 16px;
   }
 
+  .ask-cell {
+    padding: 18px 16px;
+  }
+
   .site-title {
+    /* 18px Ballet on a 22px line, the phone frame's title. */
+    font-size: 18px;
+    line-height: 22px;
     text-align: center;
     text-wrap: balance;
     white-space: normal;
-    line-height: 30px;
   }
 
   .ball {
