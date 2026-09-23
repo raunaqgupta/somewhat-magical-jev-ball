@@ -56,7 +56,10 @@ question box's cells have 36px of padding; the title sits 20px from its cell's t
 bottom. The three cells sit on a `#fcfcfc` fill.
 
 The lines are drawn by the cells themselves (their top edges, run out to both sides, and the column's
-sides), so there are no extra elements for them. On a desktop they are dashed `#eeeeee` across the
+sides), so there are no extra elements for them. The column's two side lines are drawn as dashed
+gradients (3px on, 3px off, as a 1px dashed border draws them) rather than as a dashed border,
+because WebKit does not paint a dashed border's left edge at some widths (a 320px-wide iPhone's, where
+the box starts 7.5px in), which left the page with only its right line. On a desktop they are dashed `#eeeeee` across the
 page, and where they cross the middle column's box they are redrawn solid: the box's sides, the
 title row's top edge and the question box's bottom edge are the darker `#aaaaaa` frame, and the
 ball's and question box's top edges are `#eeeeee`.
@@ -71,6 +74,10 @@ title and its 50px (about 305px) instead of 421px, with the empty columns taking
 phones narrower than the title (about 305px). (Frame 36-0 draws the page-wide lines in a paler
 `#f4f4f4`, and its cells clear; those are treated as differences in how the frame was drawn, not in
 how the page looks on a phone.)
+
+On a phone, dashed lines also run along the top and bottom of the viewport (the fixed background layer's
+edges), marking where the page's visible area ends between the phone's status bar and toolbar: the middle
+column's two lines start and stop there.
 
 The page is drawn out to the very edges of a phone's screen (`viewport-fit=cover`), including behind
 its notch, status bar and home bar; without it the browser lays the page out inside those and leaves

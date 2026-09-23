@@ -57,7 +57,13 @@ test("desktop: the lines are dashed #EEEEEE across the page and solid #AAAAAA ro
   assert.match(css, /--cell:\s*#fcfcfc/i);
   // The page's own lines run out dashed; the cells redraw them solid where they cross the
   // box, and the box's own lines (its sides and its top and bottom) are the darker frame.
-  assert.match(rule(desktopCss, "body::before"), /border-inline:\s*1px var\(--line-style\) var\(--line\)/);
+  // The middle column's two lines are dashed gradients (3px on, 3px off, like a 1px dashed
+  // border), not a dashed border: WebKit does not paint a dashed border's left edge at some
+  // widths, such as a 320px-wide iPhone's.
+  const sides = rule(desktopCss, "body::before");
+  assert.doesNotMatch(sides, /border/, "not a border, which WebKit can drop the left edge of");
+  assert.match(sides, /linear-gradient\(var\(--line\) 50%, transparent 0\) left \/ 1px 6px repeat-y/);
+  assert.match(sides, /linear-gradient\(var\(--line\) 50%, transparent 0\) right \/ 1px 6px repeat-y/);
   // The three cells share the frame-drawing rule, which the last of them, .ask-cell,
   // stands for.
   assert.match(rule(desktopCss, ".ask-cell"), /border:\s*solid var\(--frame\)/);
@@ -79,7 +85,9 @@ test("phone: the same grid, with the middle column as wide as the title and the 
   assert.doesNotMatch(phoneCss, /grid-area|display:\s*none|border/);
   // Nor is the styling different: the phone's lines, box lines and cell fill are the desktop's
   // (the phone rules set sizes and spacing only, never a colour or a line style).
-  assert.doesNotMatch(phoneCss, /--line|--frame|--cell|color|background/i);
+  // (Only the declarations count: the selector `.background` is the viewport lines' layer.)
+  const declarations = [...phoneCss.matchAll(/\{([^}]*)\}/g)].map((m) => m[1].replace(/\/\*[\s\S]*?\*\//g, "")).join("\n");
+  assert.doesNotMatch(declarations, /--line|--frame|--cell|color|background/i);
   // The title sits 20px from the top of its cell and 16px from the bottom, with 50px either side.
   assert.equal(value(rule(phoneCss, ".site-header"), "padding"), "20px 50px 16px");
   assert.equal(value(rule(phoneCss, ".ball-cell"), "padding"), "36px 16px");
@@ -136,4 +144,19 @@ test("the question box fills its cell: 347px on a desktop and the full width on 
   assert.equal(value(rule(desktopCss, ".ask-wrap"), "width"), "100%");
   // 421px column, less the two 1px lines and 36px of padding each side.
   assert.equal(421 - 2 - 2 * 36, 347);
+});
+
+test("phone: dashed lines mark the top and bottom of the viewport, where the column's lines start and stop", () => {
+  // They belong to the fixed layer that covers the viewport, so they stay at its edges.
+  const edge = rule(desktopCss, ".background::before,\n.background::after");
+  assert.match(edge, /position:\s*absolute/);
+  assert.equal(value(edge, "height"), "1px");
+  assert.equal(value(edge, "left"), "0");
+  assert.equal(value(edge, "right"), "0");
+  assert.match(edge, /linear-gradient\(90deg, var\(--line\) 50%, transparent 0\) 0 0 \/ 6px 1px repeat-x/);
+  assert.equal(value(rule(desktopCss, ".background::before"), "top"), "0");
+  assert.equal(value(rule(desktopCss, ".background::after"), "bottom"), "0");
+  // Drawn on a phone only: on a desktop the window's own edge is the page's edge.
+  assert.equal(value(edge, "display"), "none");
+  assert.equal(value(rule(phoneCss, ".background::before,\n  .background::after"), "display"), "block");
 });
