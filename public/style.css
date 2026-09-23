@@ -82,11 +82,16 @@ body {
 }
 
 /* The middle column's sides, above the title and below the question box. The cells
-   draw them darker where they are. */
+   draw them darker where they are. They are dashed lines drawn as gradients (3px on, 3px
+   off, as a 1px dashed border draws them) rather than as a dashed border: WebKit does not
+   paint a dashed border's left edge at some widths (a 320px-wide iPhone's, where the box
+   starts 7.5px in), and a page with only its right line looks broken. */
 body::before {
   content: "";
   grid-area: 1 / 2 / -1 / 3;
-  border-inline: 1px var(--line-style) var(--line);
+  background:
+    linear-gradient(var(--line) 50%, transparent 0) left / 1px 6px repeat-y,
+    linear-gradient(var(--line) 50%, transparent 0) right / 1px 6px repeat-y;
   z-index: -1;
 }
 
@@ -148,6 +153,28 @@ body::before {
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+/* On a phone (see the media query), lines along the top and bottom of the viewport: they mark
+   where the page's visible area ends between the phone's status bar and its toolbar, which is
+   where the middle column's two lines start and stop. */
+.background::before,
+.background::after {
+  content: "";
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line) 50%, transparent 0) 0 0 / 6px 1px repeat-x;
+}
+
+.background::before {
+  top: 0;
+}
+
+.background::after {
+  bottom: 0;
 }
 
 .blurb {
@@ -429,6 +456,11 @@ body::before {
        box's own two 1px lines. */
     grid-template-columns: 1fr minmax(0, max-content) 1fr;
     grid-template-rows: minmax(var(--safe-top), 1fr) minmax(59px, auto) 252px 82px minmax(var(--safe-bottom), 1fr);
+  }
+
+  .background::before,
+  .background::after {
+    display: block;
   }
 
   .site-header {
