@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
+const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+
 // The page's layout is CSS, so this reads the numbers out of the stylesheet and checks them
 // against the two Paper designs: the desktop (1280 wide) and the phone (370 wide).
 const css = readFileSync(new URL("../public/style.css", import.meta.url), "utf8");
@@ -25,10 +27,14 @@ test("desktop: a grid of 1fr, 421px, 1fr columns and five rows, the middle three
   assert.equal(value(body, "display"), "grid");
   // The design's middle column is 421px, its two 1px box lines included.
   assert.equal(value(body, "grid-template-columns"), "1fr 421px 1fr");
-  // The empty rows above and below take what is left, so the middle three are centred. The
-  // title's row is the desktop frame's 71px (the phone frame's stays 63px); the question
-  // box's row is 117px plus the 1px line under it.
-  assert.equal(value(body, "grid-template-rows"), "1fr 71px 346px 118px 1fr");
+  // The empty rows above and below take what is left, so the middle three are centred (and are
+  // never shorter than the phone's safe areas, which are 0 on a desktop). The title's row is the
+  // desktop frame's 71px (the phone frame's is 59px); the question box's row is 117px plus the
+  // 1px line under it.
+  assert.equal(
+    value(body, "grid-template-rows"),
+    "minmax(var(--safe-top), 1fr) 71px 346px 118px minmax(var(--safe-bottom), 1fr)"
+  );
   assert.equal(value(body, "padding"), undefined, "the cells have the padding, not the page");
 });
 
@@ -62,20 +68,33 @@ test("desktop: the lines are dashed #EEEEEE across the page and solid #AAAAAA ro
 test("phone: the same grid, with the middle column as wide as the title and the design's row heights", () => {
   const body = rule(phoneCss, "body");
   assert.equal(value(body, "grid-template-columns"), "1fr minmax(0, max-content) 1fr");
-  // The title's row can grow if the title has to wrap on a very narrow phone.
-  assert.equal(value(body, "grid-template-rows"), "1fr minmax(63px, auto) 252px 118px 1fr");
+  // The title's row (59px) can grow if the title has to wrap on a very narrow phone; the ball's
+  // is 252px and the question box's 82px (18px, the 44px box, 18px, and its two 1px lines).
+  assert.equal(
+    value(body, "grid-template-rows"),
+    "minmax(var(--safe-top), 1fr) minmax(59px, auto) 252px 82px minmax(var(--safe-bottom), 1fr)"
+  );
   assert.equal(value(body, "padding"), undefined, "the cells have the padding, not the page");
-  // The cells and the lines are the desktop's: the phone does not move or hide them.
+  // The cells are the desktop's: the phone does not move or hide them.
   assert.doesNotMatch(phoneCss, /grid-area|display:\s*none|border/);
-  // The phone frame keeps the paler, solid lines of the old design, on clear cells.
-  assert.match(phoneCss, /--line:\s*#f4f4f4/i);
-  assert.match(phoneCss, /--line-style:\s*solid/i);
-  assert.match(phoneCss, /--frame:\s*#cccccc/i);
-  assert.match(phoneCss, /--cell:\s*transparent/i);
-  assert.equal(value(rule(phoneCss, ".site-header"), "padding"), "16px");
-  // The ball's and the question box's cells share a rule, which the last of them stands for.
-  assert.match(phoneCss, /\.ball-cell,\s*\.ask-cell\s*\{/);
-  assert.equal(value(rule(phoneCss, ".ask-cell"), "padding"), "36px 16px");
+  // Nor is the styling different: the phone's lines, box lines and cell fill are the desktop's
+  // (the phone rules set sizes and spacing only, never a colour or a line style).
+  assert.doesNotMatch(phoneCss, /--line|--frame|--cell|color|background/i);
+  // The title sits 20px from the top of its cell and 16px from the bottom, with 50px either side.
+  assert.equal(value(rule(phoneCss, ".site-header"), "padding"), "20px 50px 16px");
+  assert.equal(value(rule(phoneCss, ".ball-cell"), "padding"), "36px 16px");
+  assert.equal(value(rule(phoneCss, ".ask-cell"), "padding"), "18px 16px");
+});
+
+test("a phone's screen is filled to its edges, and the empty rows clear what covers it", () => {
+  // Without viewport-fit=cover a phone lays the page out inside its notch and home bar, leaving
+  // bands above and below where none of the page's lines are drawn.
+  const viewport = /<meta\s+name="viewport"\s+content="([^"]*)"/.exec(html)?.[1];
+  assert.ok(viewport, "a viewport meta tag");
+  assert.match(viewport, /(?:^|,\s*)viewport-fit=cover(?:,|$)/);
+  assert.match(viewport, /width=device-width/);
+  assert.match(css, /--safe-top:\s*env\(safe-area-inset-top,\s*0px\)/);
+  assert.match(css, /--safe-bottom:\s*env\(safe-area-inset-bottom,\s*0px\)/);
 });
 
 test("the lines run out past their cells without making the page scroll sideways", () => {

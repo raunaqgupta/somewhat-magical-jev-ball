@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Somewhat Magical Jev Ball</title>
     <meta
       name="description"
@@ -47,10 +47,18 @@
       type="font/woff2"
       crossorigin
     />
+    <link
+      rel="preload"
+      href="/fonts/hyperlegible-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/app.js"></script>
     <script type="module" src="/background.js"></script>
     <script type="module" src="/ball-rotate.js"></script>
+    <script type="module" src="/viewport.js"></script>
   </head>
   <body>
     <header class="site-header">
