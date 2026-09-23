@@ -181,6 +181,9 @@ tinted pale cyan (the design's live-blurb) so they read differently from the bui
 are plain outlines. The layer is the body's first child, so the title, ball and question box always
 paint over the blurbs, never the other way round.
 
+- **Clicking a blurb asks its question**: the input is filled with it and it is sent, as if typed.
+  The background only announces the click (a `blurb-ask` event); `public/app.js` does the asking,
+  and ignores it while an answer is on its way.
 - A `Feed` Durable Object (`src/worker.js`) holds one WebSocket per visitor at `/api/feed` and
   relays each question to all of them. **Nothing is stored**: a question is only seen by visitors
   who are connected when it is asked.

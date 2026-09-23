@@ -2,6 +2,8 @@
 // background. When nobody has asked anything for a while, or the feed is unavailable, a
 // built-in list of questions is shown instead, so the background is never empty. Purely
 // decorative: it never touches the ball or the input, and the page works the same without it.
+// The one thing it does beyond drifting: clicking a blurb asks its question (see the "blurb-ask"
+// event, which app.js answers).
 import { blurbLook, estimateSize, pickMotion, pickPosition } from "./blurb-layout.js";
 import { clientId } from "./client-id.js";
 import { createDeck, idleDelay, isQuiet } from "./idle-feed.js";
@@ -47,6 +49,11 @@ function show(question, live = false) {
   el.style.top = `${y}px`;
   el.style.fontSize = `${fontSize}px`;
   layer.append(el);
+
+  el.addEventListener("click", () => {
+    el.remove();
+    document.dispatchEvent(new CustomEvent("blurb-ask", { detail: { question } }));
+  });
 
   // Flash in, hold while drifting, then fade out.
   const keyframes = reducedMotion.matches

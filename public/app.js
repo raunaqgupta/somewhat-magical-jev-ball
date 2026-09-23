@@ -48,6 +48,16 @@ input.addEventListener("input", () => {
 // Also covers a value the browser restored (autofill, back navigation).
 syncSend();
 
+// Clicking a blurb in the background asks its question, as if it had been typed and sent. It is
+// ignored while an answer is on its way, like the form itself.
+document.addEventListener("blurb-ask", (event) => {
+  if (busy) return;
+  input.value = event.detail.question;
+  // As if typed: enables the button and warms the model.
+  input.dispatchEvent(new Event("input"));
+  form.requestSubmit();
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const question = input.value.trim();

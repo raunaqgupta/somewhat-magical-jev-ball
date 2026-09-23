@@ -195,6 +195,9 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 0;
+  /* The layer lets clicks through to the page; a blurb takes them, to ask its question. */
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 /* Questions that came from real visitors' browsers rather than the built-in list. */
