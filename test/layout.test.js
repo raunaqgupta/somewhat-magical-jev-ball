@@ -27,13 +27,14 @@ test("desktop: a grid of 1fr, 421px, 1fr columns and five rows, the middle three
   assert.equal(value(body, "display"), "grid");
   // The design's middle column is 421px, its two 1px box lines included.
   assert.equal(value(body, "grid-template-columns"), "1fr 421px 1fr");
-  // The empty rows above and below take what is left, so the middle three are centred (and are
-  // never shorter than the phone's safe areas, which are 0 on a desktop). The title's row is the
+  // The empty rows above and below take what is left, so the middle three are centred. The top
+  // one is never shorter than the phone's safe area (0 on a desktop); the bottom one is never
+  // shorter than the attribution in it, which keeps clear of the home bar itself. The title's row is the
   // desktop frame's 71px (the phone frame's is 59px); the question box's row is 117px plus the
   // 1px line under it.
   assert.equal(
     value(body, "grid-template-rows"),
-    "minmax(var(--safe-top), 1fr) 71px 346px 118px minmax(var(--safe-bottom), 1fr)"
+    "minmax(var(--safe-top), 1fr) 71px 346px 118px minmax(auto, 1fr)"
   );
   assert.equal(value(body, "padding"), undefined, "the cells have the padding, not the page");
 });
@@ -78,7 +79,7 @@ test("phone: the same grid, with the middle column as wide as the title and the 
   // is 252px and the question box's 82px (18px, the 44px box, 18px, and its two 1px lines).
   assert.equal(
     value(body, "grid-template-rows"),
-    "minmax(var(--safe-top), 1fr) minmax(59px, auto) 252px 82px minmax(var(--safe-bottom), 1fr)"
+    "minmax(var(--safe-top), 1fr) minmax(59px, auto) 252px 82px minmax(auto, 1fr)"
   );
   assert.equal(value(body, "padding"), undefined, "the cells have the padding, not the page");
   // The cells are the desktop's: the phone does not move or hide them.
@@ -159,4 +160,17 @@ test("phone: dashed lines mark the top and bottom of the viewport, where the col
   // Drawn on a phone only: on a desktop the window's own edge is the page's edge.
   assert.equal(value(edge, "display"), "none");
   assert.equal(value(rule(phoneCss, ".background::before,\n  .background::after"), "display"), "block");
+});
+
+test("the attribution: centred in the last row, 16px off the bottom, linking to raunaqgupta.com", () => {
+  assert.match(html, /<footer class="site-footer">\s*by <a href="https:\/\/raunaqgupta\.com">Raunaq Gupta<\/a>\s*<\/footer>/);
+  const footer = rule(desktopCss, ".site-footer");
+  assert.equal(value(footer, "grid-area"), "5 / 1 / 6 / -1");
+  assert.equal(value(footer, "align-self"), "end");
+  assert.equal(value(footer, "padding"), "16px 16px calc(16px + var(--safe-bottom))");
+  // The design's 12px system face on a 16px line, in #999999, the name underlined 1px.
+  assert.equal(value(footer, "font"), "400 12px/16px var(--font)");
+  assert.match(css, /--credit:\s*#999999/i);
+  assert.equal(value(footer, "color"), "var(--credit)");
+  assert.equal(value(rule(desktopCss, ".site-footer a"), "text-decoration"), "underline 1px");
 });
