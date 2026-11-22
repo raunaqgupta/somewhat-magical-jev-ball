@@ -5,6 +5,8 @@
   --input-border: #aaaaaa;
   --muted: #666666;
   --title: #696969;
+  /* The attribution under the page, from the desktop frame (7B-0). */
+  --credit: #999999;
   /* The grid's lines, from the desktop frame (7B-0): across the page they are #EEEEEE and
      dashed; the middle column's box is drawn over them, solid and darker (#AAAAAA), and the
      box's three cells sit on a #FCFCFC fill. A phone looks the same: only sizes and spacing
@@ -77,7 +79,9 @@ body {
   /* The desktop frame's column and rows: a 421px middle column (its two 1px box lines
      included), the title's 71px row, the ball's 346px and the question box's 118px. */
   grid-template-columns: 1fr 421px 1fr;
-  grid-template-rows: minmax(var(--safe-top), 1fr) 71px 346px 118px minmax(var(--safe-bottom), 1fr);
+  /* The last row is never shorter than the attribution in it (which keeps clear of a phone's
+     home bar itself: see .site-footer). */
+  grid-template-rows: minmax(var(--safe-top), 1fr) 71px 346px 118px minmax(auto, 1fr);
   /* The lines run out 100vw past their cells; none of that should make the page scroll. */
   overflow-x: clip;
   background: var(--bg);
@@ -449,6 +453,35 @@ body::before {
   line-height: 18px;
 }
 
+/* The attribution, in the empty row under the box: centred, 16px off the bottom of the page
+   (and clear of a phone's home bar), small and grey, with the name underlined as a link. It
+   is positioned so it paints over, and takes clicks before, the drifting questions. */
+.site-footer {
+  grid-area: 5 / 1 / 6 / -1;
+  align-self: end;
+  position: relative;
+  padding: 16px 16px calc(16px + var(--safe-bottom));
+  color: var(--credit);
+  font: 400 12px/16px var(--font);
+  text-align: center;
+}
+
+.site-footer a {
+  color: inherit;
+  text-decoration: underline 1px;
+  text-underline-position: from-font;
+}
+
+.site-footer a:hover {
+  color: var(--ink);
+}
+
+.site-footer a:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -469,7 +502,7 @@ body::before {
     /* The question box's row is 82px: the design's 18px above and below the 44px box, and the
        box's own two 1px lines. */
     grid-template-columns: 1fr minmax(0, max-content) 1fr;
-    grid-template-rows: minmax(var(--safe-top), 1fr) minmax(59px, auto) 252px 82px minmax(var(--safe-bottom), 1fr);
+    grid-template-rows: minmax(var(--safe-top), 1fr) minmax(59px, auto) 252px 82px minmax(auto, 1fr);
   }
 
   .background::before,
